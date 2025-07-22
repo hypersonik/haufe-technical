@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/manufacturer")
@@ -36,7 +37,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerUpsertResponseDto} response containing created manufacturer details
      */
     @PostMapping()
-    public ManufacturerUpsertResponseDto create(@RequestBody ManufacturerUpsertDto request) {
+    public Mono<ManufacturerUpsertResponseDto> create(@RequestBody ManufacturerUpsertDto request) {
         return manufacturerService.create(request);
     }
 
@@ -45,11 +46,12 @@ public class ManufacturerController {
      *
      * @param id      the ID of the manufacturer to update
      * @param request the {@link ManufacturerUpsertDto} request containing updated manufacturer details
+     * @return the {@link ManufacturerUpsertResponseDto} response containing updated manufacturer details
      * @throws ApiException if the manufacturer with the given ID is not found
      */
     @PutMapping("{id}")
-    public void update(@PathVariable Long id, @RequestBody ManufacturerUpsertDto request) throws ApiException {
-        manufacturerService.update(id, request);
+    public Mono<ManufacturerUpsertResponseDto> update(@PathVariable Long id, @RequestBody ManufacturerUpsertDto request) throws ApiException {
+        return manufacturerService.update(id, request);
     }
 
     /**
@@ -60,7 +62,7 @@ public class ManufacturerController {
      * @throws ApiException if the manufacturer with the given ID is not found
      */
     @GetMapping("{id}")
-    public ManufacturerReadResponseDto read(@PathVariable Long id) throws ApiException {
+    public Mono<ManufacturerReadResponseDto> read(@PathVariable Long id) throws ApiException {
         return manufacturerService.read(id);
     }
 
@@ -70,14 +72,14 @@ public class ManufacturerController {
      * @return a list of {@link ManufacturerListResponseDto} containing then id and name of all manufacturers
      */
     @GetMapping()
-    public Page<ManufacturerListResponseDto> list(
+    public Mono<Page<ManufacturerListResponseDto>> list(
             @Parameter(example = PAGE_PARAMETER_EXAMPLE)
             @PageableDefault(sort = "name") Pageable pageable) {
         return manufacturerService.list(pageable);
     }
 
     @DeleteMapping("{id}")
-    public void delete(@PathVariable Long id) throws ApiException {
-        manufacturerService.delete(id);
+    public Mono<Void> delete(@PathVariable Long id) throws ApiException {
+        return manufacturerService.delete(id);
     }
 }

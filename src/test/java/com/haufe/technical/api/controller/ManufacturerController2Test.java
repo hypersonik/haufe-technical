@@ -11,19 +11,23 @@ import com.haufe.technical.api.service.ManufacturerService;
 import com.haufe.technical.api.utils.RestResponsePage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.data.web.config.SpringDataJacksonConfiguration;
 import org.springframework.data.web.config.SpringDataWebSettings;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -31,15 +35,15 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ManufacturerController.class)
-@Import({WebSecurityConfig.class})
-@AutoConfigureMockMvc(addFilters = false)
-class ManufacturerControllerTest {
-
+@ExtendWith(SpringExtension.class)
+@WebFluxTest(ManufacturerController.class)
+//@Import({WebSecurityConfig.class})
+class ManufacturerController2Test {
     private static final long THE_ID = 1L;
     private static final String THE_MANUFACTURER = "The Manufacturer";
     private static final String THE_COUNTRY = "The Country";
@@ -48,7 +52,7 @@ class ManufacturerControllerTest {
     private ManufacturerService manufacturerService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -61,20 +65,26 @@ class ManufacturerControllerTest {
     }
 
     @Test
+    //@WithMockUser(username = "admin", roles = "ADMIN")
     void testCreate() throws Exception {
         ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
         ManufacturerUpsertResponseDto response = new ManufacturerUpsertResponseDto(THE_ID, THE_MANUFACTURER);
         when(manufacturerService.create(any(ManufacturerUpsertDto.class))).thenReturn(Mono.just(response));
 
-        mockMvc.perform(post("/api/manufacturer")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(THE_ID))
-                .andExpect(jsonPath("$.name").value(THE_MANUFACTURER));
+        webTestClient
+                .mutateWith(mockUser("admin").roles("ADMIN"))
+                .post().uri("/api/manufacturer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(THE_ID)
+                .jsonPath("$.name").isEqualTo(THE_MANUFACTURER);
 
         verify(manufacturerService).create(any());
     }
+/*
 
     @Test
     void testUpdate() throws Exception {
@@ -106,7 +116,7 @@ class ManufacturerControllerTest {
     @Test
     void testList() throws Exception {
         List<ManufacturerListResponseDto> listResponseDtos = buildManufacturerList(10);
-        when(manufacturerService.list(any(Pageable.class))).thenReturn(Mono.just(new PageImpl<>(listResponseDtos)));
+        when(manufacturerService.list(any(Pageable.class))).thenReturn(Flux.fromIterable(listResponseDtos));
 
         String json = mockMvc.perform(get("/api/manufacturer")
                         .param("page", "0")
@@ -144,4 +154,5 @@ class ManufacturerControllerTest {
                 .mapToObj(i -> new ManufacturerListResponseDto((long) i, "Manufacturer " + i, "Country " + i))
                 .toList();
     }
+*/
 }

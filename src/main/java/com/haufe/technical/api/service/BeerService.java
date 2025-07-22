@@ -10,11 +10,12 @@ import com.haufe.technical.api.domain.repository.ManufacturerRepository;
 import com.haufe.technical.api.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -24,51 +25,73 @@ public class BeerService {
     private final BeerRepository beerRepository;
 
     @Transactional
-    public BeerUpsertResponseDto create(Long manufacturerId, BeerUpsertDto request) throws ApiException {
-        if (!manufacturerRepository.existsById(manufacturerId)) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with ID " + manufacturerId + " not found.");
-        }
+    public Mono<BeerUpsertResponseDto> create(Long manufacturerId, BeerUpsertDto request) throws ApiException {
+        return manufacturerRepository.existsById(manufacturerId)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.NOT_FOUND,
+                                "Manufacturer with ID " + manufacturerId + " not found."));
+                    }
 
-        final Beer beer = Beer.builder()
-                .name(request.name())
-                .abv(request.avb())
-                .style(request.style())
-                .description(request.description())
-                .manufacturer(manufacturerRepository.getReferenceById(manufacturerId))
-                .build();
+                    final Beer beer = Beer.builder()
+                            .name(request.name())
+                            .abv(request.avb())
+                            .style(request.style())
+                            .description(request.description())
+                            .manufacturerId(manufacturerId)
+                            .build();
 
-        Beer savedBeer = beerRepository.save(beer);
-        log.atInfo().log(() -> "Created beer: " + savedBeer);
-
-        return new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName());
+                    return beerRepository.save(beer);
+                })
+                .map(savedBeer -> {
+                    log.atInfo().log(() -> "Created beer: " + savedBeer);
+                    return new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName());
+                })
+                .doOnSuccess(savedBeer -> log.atInfo().log(() -> "Created beer: " + savedBeer));
     }
 
     @Transactional
-    public void update(Long id, BeerUpsertDto request) throws ApiException {
-        Beer beer = beerRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found."));
-
-        beer.setName(request.name());
-        beer.setAbv(request.avb());
-        beer.setStyle(request.style());
-        beer.setDescription(request.description());
-
-        Beer savedBeer = beerRepository.save(beer);
-        log.atInfo().log(() -> "Updated beer: " + savedBeer);
+    public Mono<BeerUpsertResponseDto> update(Long id, BeerUpsertDto request) {
+        return beerRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found.")))
+                .flatMap(beer -> {
+                    // Update fields only if they are not null
+                    if (request.name() != null) {
+                        beer.setName(request.name());
+                    }
+                    if (request.avb() != null) {
+                        beer.setAbv(request.avb());
+                    }
+                    if (request.style() != null) {
+                        beer.setStyle(request.style());
+                    }
+                    if (request.description() != null) {
+                        beer.setDescription(request.description());
+                    }
+                    return beerRepository.save(beer);
+                })
+                .map(savedBeer -> {
+                    log.atInfo().log(() -> "Updated beer: " + savedBeer);
+                    return new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName());
+                })
+                .doOnSuccess(savedBeer -> log.atInfo().log(() -> "Updated beer: " + savedBeer))
+                .doOnError(exception -> log.error("Error updating beer with ID {}: {}", id, exception.getMessage()));
     }
 
-    public BeerReadResponseDto read(Long id) throws ApiException {
+    public Mono<BeerReadResponseDto> read(Long id) {
         return beerRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found.")))
                 .map(beer -> new BeerReadResponseDto(
                         beer.getName(),
                         beer.getAbv(),
                         beer.getStyle(),
-                        beer.getDescription()))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found"));
+                        beer.getDescription()));
     }
 
-    public Page<BeerListResponseDto> list(Pageable pageable) {
-        return beerRepository.findAll(pageable)
+    public Flux<BeerListResponseDto> list(Pageable pageable) {
+        return beerRepository.findAllBy(pageable)
                 .map(beer -> new BeerListResponseDto(
                         beer.getId(),
                         beer.getName(),
@@ -77,13 +100,14 @@ public class BeerService {
                         beer.getDescription()));
     }
 
-    public void delete(Long id) throws ApiException {
-        if (!beerRepository.existsById(id)) {
-            log.warn("Attempted to delete non-existing beer with id: {}", id);
-            throw new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found");
-        }
-
-        beerRepository.deleteById(id);
-        log.info("Deleted beer with id: {}", id);
+    public Mono<Void> delete(Long id) {
+        return beerRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found"));
+                    }
+                    return beerRepository.deleteById(id);
+                })
+                .doOnSuccess(aVoid -> log.info("Deleted beer with id: {}", id));
     }
 }

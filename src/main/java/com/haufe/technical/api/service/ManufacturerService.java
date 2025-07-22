@@ -11,10 +11,12 @@ import com.haufe.technical.api.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
@@ -23,63 +25,79 @@ public class ManufacturerService {
     private final ManufacturerRepository manufacturerRepository;
     private final BeerRepository beerRepository;
 
-    public ManufacturerUpsertResponseDto create(ManufacturerUpsertDto request) {
+    public Mono<ManufacturerUpsertResponseDto> create(ManufacturerUpsertDto request) {
         final Manufacturer manufacturer = Manufacturer.builder()
                 .name(request.name())
                 .country(request.country())
                 .build();
 
-        final Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
-        log.atInfo().log(() -> "Created manufacturer: " + savedManufacturer);
-
-        return new ManufacturerUpsertResponseDto(savedManufacturer.getId(), savedManufacturer.getName());
+        return manufacturerRepository.save(manufacturer)
+                .map(savedManufacturer ->
+                        new ManufacturerUpsertResponseDto(savedManufacturer.getId(), savedManufacturer.getName()))
+                .doOnSuccess(savedManufacturer ->
+                        log.atInfo().log(() -> "Created manufacturer: " + savedManufacturer))
+                .doOnError(exception ->
+                        log.error("Error creating manufacturer: {}", exception.getMessage()));
     }
 
     @Transactional
-    public void update(Long id, ManufacturerUpsertDto request) throws ApiException {
-        Manufacturer manufacturer = manufacturerRepository.findById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found"));
-
-        // Don't allow clearing the name or country
-        if (request.name() != null) {
-            manufacturer.setName(request.name());
-        }
-        if (request.country() != null) {
-            manufacturer.setCountry(request.country());
-        }
-
-        Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
-        log.atInfo().log(() -> "Updated manufacturer: " + savedManufacturer);
-    }
-
-    public ManufacturerReadResponseDto read(Long id) throws ApiException {
+    public Mono<ManufacturerUpsertResponseDto> update(Long id, ManufacturerUpsertDto request) {
         return manufacturerRepository.findById(id)
-                .map(manufacturer -> new ManufacturerReadResponseDto(manufacturer.getName(), manufacturer.getCountry()))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found"));
+                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found")))
+                .flatMap(manufacturer -> {
+                    // Update fields only if they are not null
+                    if (request.name() != null) {
+                        manufacturer.setName(request.name());
+                    }
+                    if (request.country() != null) {
+                        manufacturer.setCountry(request.country());
+                    }
+                    return manufacturerRepository.save(manufacturer);
+                })
+                .map(savedManufacturer ->
+                        new ManufacturerUpsertResponseDto(savedManufacturer.getId(), savedManufacturer.getName()))
+                .doOnSuccess(savedManufacturer ->
+                        log.atInfo().log(() -> "Updated manufacturer: " + savedManufacturer))
+                .doOnError(exception ->
+                        log.error("Error updating manufacturer with id {}: {}", id, exception.getMessage()));
     }
 
-    public Page<ManufacturerListResponseDto> list(Pageable pageable) {
-        return manufacturerRepository.findAll(pageable)
+    public Mono<ManufacturerReadResponseDto> read(Long id) {
+        return manufacturerRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found")))
+                .map(manufacturer ->
+                        new ManufacturerReadResponseDto(manufacturer.getName(), manufacturer.getCountry()));
+    }
+
+    public Mono<Page<ManufacturerListResponseDto>> list(Pageable pageable) {
+        return manufacturerRepository.findAll(pageable.getSort())
+                .skip(pageable.getOffset())
+                .take(pageable.getPageSize())
                 .map(manufacturer ->
                         new ManufacturerListResponseDto(
                                 manufacturer.getId(),
                                 manufacturer.getName(),
-                                manufacturer.getCountry()));
+                                manufacturer.getCountry()))
+                .collectList()
+                .zipWith(manufacturerRepository.count())
+                .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
     }
 
     @Transactional
-    public void delete(Long id) throws ApiException {
-        if (!manufacturerRepository.existsById(id)) {
-            log.warn("Attempted to delete non-existing manufacturer with id: {}", id);
-            throw new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found");
-        }
-
-        if (beerRepository.existsByManufacturerId(id)) {
-            log.warn("Attempted to delete manufacturer with id: {} that has associated beers", id);
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Cannot delete manufacturer with id " + id + " because it has associated beers");
-        }
-
-        manufacturerRepository.deleteById(id);
-        log.info("Deleted manufacturer with id: {}", id);
+    public Mono<Void> delete(Long id) {
+        return manufacturerRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found"));
+                    }
+                    return beerRepository.existsByManufacturerId(id)
+                            .flatMap(hasBeers -> {
+                                if (hasBeers) {
+                                    return Mono.error(new ApiException(HttpStatus.BAD_REQUEST, "Cannot delete manufacturer with id " + id + " because it has associated beers"));
+                                }
+                                return manufacturerRepository.deleteById(id);
+                            });
+                })
+                .doOnSuccess(aVoid -> log.info("Deleted manufacturer with id: {}", id));
     }
 }

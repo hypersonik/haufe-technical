@@ -1,18 +1,16 @@
 package com.haufe.technical.api.domain.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
-@Entity
+@Table
 @Builder
 @Data
 @NoArgsConstructor
@@ -24,11 +22,10 @@ public class Manufacturer {
     private String name;
     private String country;
 
-    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Beer> beers = new ArrayList<>();
-
-    @CreationTimestamp
+    @EqualsAndHashCode.Exclude
+    @CreatedDate
     private Instant createdAt;
-    @UpdateTimestamp
+    @EqualsAndHashCode.Exclude
+    @LastModifiedDate
     private Instant updatedAt;
 }

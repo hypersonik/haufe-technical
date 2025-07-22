@@ -1,16 +1,16 @@
 package com.haufe.technical.api.domain.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
 
-@Entity
+@Table
 @Builder
 @Data
 @NoArgsConstructor
@@ -24,12 +24,13 @@ public class Beer {
     private String style;
     private String description;
 
-    @ManyToOne
-    @JoinColumn(name = "manufacturer_id")
-    private Manufacturer manufacturer;
+    @EqualsAndHashCode.Exclude
+    private Long manufacturerId;
 
-    @CreationTimestamp
+    @EqualsAndHashCode.Exclude
+    @CreatedDate
     private Instant createdAt;
-    @UpdateTimestamp
+    @EqualsAndHashCode.Exclude
+    @LastModifiedDate
     private Instant updatedAt;
 }

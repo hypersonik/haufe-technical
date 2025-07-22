@@ -2,12 +2,12 @@ package com.haufe.technical.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.web.config.EnableSpringDataWebSupport;
-
-import static org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO;
+import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
+import org.springframework.web.reactive.config.EnableWebFlux;
 
 @SpringBootApplication
-@EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
+@EnableR2dbcAuditing
+@EnableWebFlux
 public class ApiApplication {
 
 	public static void main(String[] args) {

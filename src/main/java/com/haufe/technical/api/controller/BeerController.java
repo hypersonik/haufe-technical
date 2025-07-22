@@ -9,10 +9,11 @@ import com.haufe.technical.api.service.BeerService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/beer")
@@ -37,8 +38,8 @@ public class BeerController {
      * @return the {@link BeerUpsertResponseDto} response containing created beer details
      */
     @PostMapping("{manufacturerId}")
-    public BeerUpsertResponseDto create(@PathVariable Long manufacturerId,
-                                        @RequestBody BeerUpsertDto request) throws ApiException {
+    public Mono<BeerUpsertResponseDto> create(@PathVariable Long manufacturerId,
+                                              @RequestBody BeerUpsertDto request) throws ApiException {
         return beerService.create(manufacturerId, request);
     }
 
@@ -47,11 +48,12 @@ public class BeerController {
      *
      * @param id      the ID of the beer to update
      * @param request the {@link BeerUpsertDto} request containing updated beer details
+     * @return the {@link BeerUpsertResponseDto} response containing updated beer details
      * @throws ApiException if the beer with the given ID is not found
      */
     @PutMapping("{id}")
-    public void update(@PathVariable Long id, @RequestBody BeerUpsertDto request) throws ApiException {
-        beerService.update(id, request);
+    public Mono<BeerUpsertResponseDto> update(@PathVariable Long id, @RequestBody BeerUpsertDto request) throws ApiException {
+        return beerService.update(id, request);
     }
 
     /**
@@ -62,7 +64,7 @@ public class BeerController {
      * @throws ApiException if the beer with the given ID is not found
      */
     @GetMapping("{id}")
-    public BeerReadResponseDto read(@PathVariable Long id) throws ApiException {
+    public Mono<BeerReadResponseDto> read(@PathVariable Long id) throws ApiException {
         return beerService.read(id);
     }
 
@@ -72,14 +74,14 @@ public class BeerController {
      * @return a list of {@link BeerListResponseDto} containing then id and name of all beers
      */
     @GetMapping()
-    public Page<BeerListResponseDto> list(
+    public Flux<BeerListResponseDto> list(
             @Parameter(example = PAGE_PARAMETER_EXAMPLE)
             @PageableDefault(sort = "name") Pageable pageable) {
         return beerService.list(pageable);
     }
 
     @DeleteMapping("{id}")
-    public void delete(@PathVariable Long id) throws ApiException {
-        beerService.delete(id);
+    public Mono<Void> delete(@PathVariable Long id) throws ApiException {
+        return beerService.delete(id);
     }
 }
