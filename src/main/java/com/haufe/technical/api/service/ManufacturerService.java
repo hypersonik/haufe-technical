@@ -26,7 +26,17 @@ public class ManufacturerService {
     private final BeerRepository beerRepository;
 
     public Mono<ManufacturerUpsertResponseDto> create(ManufacturerUpsertDto request) {
-        final Manufacturer manufacturer = Manufacturer.builder()
+        return manufacturerRepository.findByName(request.name())
+                .flatMap(existingManufacturer ->
+                        Mono.<ManufacturerUpsertResponseDto>error(
+                                new ApiException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "Manufacturer with name " + request.name() + " already exists")))
+                .switchIfEmpty(Mono.defer(() -> createNew(request)));
+    }
+
+    private Mono<ManufacturerUpsertResponseDto> createNew(ManufacturerUpsertDto request) {
+        Manufacturer manufacturer = Manufacturer.builder()
                 .name(request.name())
                 .country(request.country())
                 .build();
