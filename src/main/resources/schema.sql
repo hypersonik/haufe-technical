@@ -15,6 +15,7 @@ CREATE TABLE BEER (
      ABV REAL,
      "STYLE" CHARACTER VARYING(25),
      DESCRIPTION CHARACTER VARYING(200),
+     MANUFACTURER_ID BIGINT NOT NULL,
      CREATED_AT TIMESTAMP WITH TIME ZONE,
      UPDATED_AT TIMESTAMP WITH TIME ZONE,
      CONSTRAINT BEER_PK PRIMARY KEY (ID)
@@ -35,14 +36,14 @@ VALUES('Lo Vilot', 'ES', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
       ('Cantillon Brewery', 'BE',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
       ('De Ranke Brewery', 'BE',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
-INSERT INTO BEER (NAME, ABV, "STYLE", DESCRIPTION, CREATED_AT, UPDATED_AT)
-VALUES('Apricot Dispersion', 6, 'Mixed fermentation', 'Cervesa de fermentació mixta macerada amb albercoc local.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Brett Saison', 5.5, 'Saison', 'A dry and fruity beer with a complex aroma of spices and citrus.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Citra Pale Ale', 5.2, 'Pale Ale', 'A hoppy and refreshing beer with a citrusy aroma.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Double IPA', 8, 'IPA', 'A strong and hoppy beer with a high alcohol content.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Elderflower Saison', 4.5, 'Saison', 'A light and floral beer with a hint of elderflower.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Flanders Red Ale', 6, 'Flanders Red Ale', 'A sour and fruity beer with a deep red color.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Gose', 4.2, 'Gose', 'A salty and sour beer with a hint of coriander.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Hazy IPA', 6.5, 'IPA', 'A hazy and juicy beer with a tropical fruit aroma.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Imperial Stout', 10, 'Stout', 'A rich and dark beer with a high alcohol content.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('Jolly Pumpkin Oro de Calabaza', 8, 'Belgian Strong Ale', 'A complex and spicy beer with a hint of oak.',  CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO BEER (NAME, ABV, "STYLE", DESCRIPTION, MANUFACTURER_ID, CREATED_AT, UPDATED_AT)
+VALUES('Apricot Dispersion', 6, 'Mixed fermentation', 'Cervesa de fermentació mixta macerada amb albercoc local.', 1,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Brett Saison', 5.5, 'Saison', 'A dry and fruity beer with a complex aroma of spices and citrus.', 2,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Citra Pale Ale', 5.2, 'Pale Ale', 'A hoppy and refreshing beer with a citrusy aroma.', 3,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Double IPA', 8, 'IPA', 'A strong and hoppy beer with a high alcohol content.', 4,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Elderflower Saison', 4.5, 'Saison', 'A light and floral beer with a hint of elderflower.', 5,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Flanders Red Ale', 6, 'Flanders Red Ale', 'A sour and fruity beer with a deep red color.', 6,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Gose', 4.2, 'Gose', 'A salty and sour beer with a hint of coriander.', 7,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Hazy IPA', 6.5, 'IPA', 'A hazy and juicy beer with a tropical fruit aroma.', 8,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Imperial Stout', 10, 'Stout', 'A rich and dark beer with a high alcohol content.', 9,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+        ('Jolly Pumpkin Oro de Calabaza', 8, 'Belgian Strong Ale', 'A complex and spicy beer with a hint of oak.', 10,CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

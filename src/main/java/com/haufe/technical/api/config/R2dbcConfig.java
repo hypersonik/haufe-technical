@@ -9,6 +9,7 @@ import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
 import org.springframework.data.r2dbc.convert.R2dbcCustomConversions;
 import org.springframework.data.r2dbc.dialect.H2Dialect;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
+import org.springframework.lang.NonNull;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,7 +34,7 @@ public class R2dbcConfig {
     @WritingConverter
     public static class InstantToLocalDateTimeConverter implements Converter<Instant, LocalDateTime> {
         @Override
-        public LocalDateTime convert(Instant source) {
+        public LocalDateTime convert(@NonNull Instant source) {
             return LocalDateTime.ofInstant(source, ZoneOffset.UTC);
         }
     }

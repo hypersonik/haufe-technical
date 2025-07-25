@@ -1,5 +1,6 @@
 package com.haufe.technical.api.service;
 
+import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerReadResponseDto;
 import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertDto;
 import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertResponseDto;
 import com.haufe.technical.api.domain.entity.Manufacturer;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import reactor.core.publisher.Flux;
@@ -68,7 +70,7 @@ class ManufacturerServiceTest {
 
     @Test
     void update_WhenManufacturerExists_ShouldUpdateSuccessfully() {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto("Updated Brewery", "Spain");
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto("Updated Brewery", "ES");
         Manufacturer existingManufacturer = Manufacturer.builder()
                 .id(THE_ID)
                 .name("Test Brewery")
@@ -77,7 +79,7 @@ class ManufacturerServiceTest {
         Manufacturer updatedManufacturer = Manufacturer.builder()
                 .id(THE_ID)
                 .name("Updated Brewery")
-                .country("Spain")
+                .country("ES")
                 .build();
 
         when(manufacturerRepository.findById(THE_ID)).thenReturn(Mono.just(existingManufacturer));
@@ -100,6 +102,38 @@ class ManufacturerServiceTest {
     }
 
     @Test
+    void update_WhenManufacturerExistsButThereIsAnotherOneWithSameName_ShouldReturnError() {
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto("Test Brewery", "USA");
+        Manufacturer existingManufacturer = Manufacturer.builder()
+                .id(THE_ID)
+                .name("Test Brewery")
+                .country("USA")
+                .build();
+
+        when(manufacturerRepository.findById(THE_ID)).thenReturn(Mono.just(existingManufacturer));
+        when(manufacturerRepository.save(any(Manufacturer.class))).thenThrow(new DuplicateKeyException("Duplicate key"));
+
+        StepVerifier.create(manufacturerService.update(THE_ID, request))
+                .expectError(DuplicateKeyException.class)
+                .verify();
+    }
+
+    @Test
+    void read_WhenManufacturerExists_ShouldReturnSuccessfully() {
+        Manufacturer manufacturer = Manufacturer.builder()
+                .id(THE_ID)
+                .name("Test Brewery")
+                .country("USA")
+                .build();
+
+        when(manufacturerRepository.findById(THE_ID)).thenReturn(Mono.just(manufacturer));
+
+        StepVerifier.create(manufacturerService.read(THE_ID))
+                .expectNext(new ManufacturerReadResponseDto("Test Brewery", "USA"))
+                .verifyComplete();
+    }
+
+    @Test
     void read_WhenManufacturerDoesNotExist_ShouldReturnError() {
         when(manufacturerRepository.findById(THE_ID)).thenReturn(Mono.empty());
 
@@ -118,10 +152,10 @@ class ManufacturerServiceTest {
                 .build();
 
         when(manufacturerRepository.findAll(pageable.getSort())).thenReturn(Flux.just(manufacturer));
-        when(manufacturerRepository.count()).thenReturn(Mono.just(THE_ID));
+        when(manufacturerRepository.count()).thenReturn(Mono.just(1L));
 
         StepVerifier.create(manufacturerService.list(pageable))
-                .expectNextMatches(page -> page.getTotalElements() == 1)
+                .expectNextMatches(page -> page.getTotalElements() == 1L)
                 .verifyComplete();
     }
 

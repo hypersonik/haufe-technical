@@ -1,7 +1,5 @@
 package com.haufe.technical.api.domain.entity;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -17,7 +15,6 @@ import java.time.Instant;
 @AllArgsConstructor
 public class Beer {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private Float abv;

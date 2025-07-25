@@ -25,6 +25,7 @@ public class ManufacturerService {
     private final ManufacturerRepository manufacturerRepository;
     private final BeerRepository beerRepository;
 
+    @Transactional
     public Mono<ManufacturerUpsertResponseDto> create(ManufacturerUpsertDto request) {
         return manufacturerRepository.findByName(request.name())
                 .flatMap(existingManufacturer ->
@@ -53,7 +54,9 @@ public class ManufacturerService {
     @Transactional
     public Mono<ManufacturerUpsertResponseDto> update(Long id, ManufacturerUpsertDto request) {
         return manufacturerRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found")))
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Manufacturer with id " + id + " not found")))
                 .flatMap(manufacturer -> {
                     // Update fields only if they are not null
                     if (request.name() != null) {
@@ -74,7 +77,9 @@ public class ManufacturerService {
 
     public Mono<ManufacturerReadResponseDto> read(Long id) {
         return manufacturerRepository.findById(id)
-                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found")))
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        "Manufacturer with id " + id + " not found")))
                 .map(manufacturer ->
                         new ManufacturerReadResponseDto(manufacturer.getName(), manufacturer.getCountry()));
     }
@@ -98,12 +103,16 @@ public class ManufacturerService {
         return manufacturerRepository.existsById(id)
                 .flatMap(exists -> {
                     if (!exists) {
-                        return Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found"));
+                        return Mono.error(new ApiException(
+                                HttpStatus.NOT_FOUND,
+                                "Manufacturer with id " + id + " not found"));
                     }
                     return beerRepository.existsByManufacturerId(id)
                             .flatMap(hasBeers -> {
                                 if (hasBeers) {
-                                    return Mono.error(new ApiException(HttpStatus.BAD_REQUEST, "Cannot delete manufacturer with id " + id + " because it has associated beers"));
+                                    return Mono.error(new ApiException(
+                                            HttpStatus.BAD_REQUEST,
+                                            "Cannot delete manufacturer with id " + id + " because it has associated beers"));
                                 }
                                 return manufacturerRepository.deleteById(id);
                             });
