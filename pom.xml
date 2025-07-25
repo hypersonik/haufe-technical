@@ -31,6 +31,7 @@
 		<byte-buddy-agent.version>1.17.6</byte-buddy-agent.version>
 		<springdoc-openapi-starter-webmvc-ui.version>2.8.9</springdoc-openapi-starter-webmvc-ui.version>
 		<maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
+		<commons-lang3.version>3.18.0</commons-lang3.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -60,6 +61,11 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>${commons-lang3.version}</version>
 		</dependency>
 
 		<dependency>

@@ -15,7 +15,10 @@ public class WebSecurityConfig
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
-        http    .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
+        http
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/swagger-ui.html","/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .anyRequest().authenticated())
                 .formLogin(AbstractAuthenticationFilterConfigurer::permitAll)
                 .csrf(AbstractHttpConfigurer::disable);
 

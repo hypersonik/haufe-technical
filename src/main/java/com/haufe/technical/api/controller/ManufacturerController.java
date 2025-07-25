@@ -36,7 +36,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerUpsertResponseDto} response containing created manufacturer details
      */
     @PostMapping()
-    public ManufacturerUpsertResponseDto create(@RequestBody ManufacturerUpsertDto request) {
+    public ManufacturerUpsertResponseDto create(@RequestBody ManufacturerUpsertDto request) throws ApiException {
         return manufacturerService.create(request);
     }
 

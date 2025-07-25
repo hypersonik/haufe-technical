@@ -7,6 +7,7 @@ import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerListRespo
 import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerReadResponseDto;
 import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertDto;
 import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertResponseDto;
+import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.service.ManufacturerService;
 import com.haufe.technical.api.utils.RestResponsePage;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.data.web.config.SpringDataJacksonConfiguration;
 import org.springframework.data.web.config.SpringDataWebSettings;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,6 +44,8 @@ class ManufacturerControllerTest {
     private static final long THE_ID = 1L;
     private static final String THE_MANUFACTURER = "The Manufacturer";
     private static final String THE_COUNTRY = "The Country";
+    private static final String NOT_FOUND_MESSAGE = "Manufacturer not found";
+    private static final String INVALID_MANUFACTURER_DATA = "Invalid manufacturer data";
 
     @MockitoBean
     private ManufacturerService manufacturerService;
@@ -76,6 +80,21 @@ class ManufacturerControllerTest {
     }
 
     @Test
+    void testCreateWhenServiceThrowsException() throws Exception {
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        when(manufacturerService.create(any()))
+                .thenThrow(new ApiException(HttpStatus.BAD_REQUEST, INVALID_MANUFACTURER_DATA));
+
+        mockMvc.perform(post("/api/manufacturer")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.description").value(INVALID_MANUFACTURER_DATA));
+
+        verify(manufacturerService).create(any());
+    }
+
+    @Test
     void testUpdate() throws Exception {
         ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
         doNothing().when(manufacturerService).update(anyLong(), any());
@@ -89,6 +108,19 @@ class ManufacturerControllerTest {
     }
 
     @Test
+    void testUpdateWhenServiceThrowsException() throws Exception {
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        doThrow(new ApiException(HttpStatus.NOT_FOUND, NOT_FOUND_MESSAGE))
+                .when(manufacturerService).update(anyLong(), any());
+
+        mockMvc.perform(put("/api/manufacturer/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.description").value(NOT_FOUND_MESSAGE));
+    }
+
+    @Test
     void testRead() throws Exception {
         ManufacturerReadResponseDto response = new ManufacturerReadResponseDto(THE_MANUFACTURER, THE_COUNTRY);
         when(manufacturerService.read(anyLong())).thenReturn(response);
@@ -97,6 +129,18 @@ class ManufacturerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(THE_MANUFACTURER))
                 .andExpect(jsonPath("$.country").value(THE_COUNTRY));
+
+        verify(manufacturerService).read(1L);
+    }
+
+    @Test
+    void testReadWhenServiceThrowsException() throws Exception {
+        when(manufacturerService.read(anyLong()))
+                .thenThrow(new ApiException(HttpStatus.NOT_FOUND, NOT_FOUND_MESSAGE));
+
+        mockMvc.perform(get("/api/manufacturer/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.description").value(NOT_FOUND_MESSAGE));
 
         verify(manufacturerService).read(1L);
     }
@@ -135,6 +179,18 @@ class ManufacturerControllerTest {
         doNothing().when(manufacturerService).delete(anyLong());
 
         mockMvc.perform(delete("/api/manufacturer/1")).andExpect(status().isOk());
+        verify(manufacturerService).delete(1L);
+    }
+
+    @Test
+    void testDeleteWhenServiceThrowsException() throws Exception {
+        doThrow(new ApiException(HttpStatus.NOT_FOUND, NOT_FOUND_MESSAGE))
+                .when(manufacturerService).delete(anyLong());
+
+        mockMvc.perform(delete("/api/manufacturer/1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.description").value(NOT_FOUND_MESSAGE));
+
         verify(manufacturerService).delete(1L);
     }
 

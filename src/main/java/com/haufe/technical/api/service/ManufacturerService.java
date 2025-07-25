@@ -10,6 +10,7 @@ import com.haufe.technical.api.domain.repository.ManufacturerRepository;
 import com.haufe.technical.api.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,30 @@ public class ManufacturerService {
     private final ManufacturerRepository manufacturerRepository;
     private final BeerRepository beerRepository;
 
-    public ManufacturerUpsertResponseDto create(ManufacturerUpsertDto request) {
+    @Transactional
+    public ManufacturerUpsertResponseDto create(ManufacturerUpsertDto request) throws ApiException {
+        // Validate request
+        if (StringUtils.isBlank(request.name())) {
+            log.warn("Attempted to create manufacturer with missing name");
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Manufacturer name must not be null");
+        }
+
+        // Check for duplicate manufacturer name
+        if (manufacturerRepository.existsByName(request.name())) {
+            log.warn("Attempted to create manufacturer with duplicate name: {}", request.name());
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Manufacturer with name " + request.name() + " already exists");
+        }
+
+        // Create a new Manufacturer entity
+        final Manufacturer savedManufacturer = createNew(request);
+        return new ManufacturerUpsertResponseDto(savedManufacturer.getId(), savedManufacturer.getName());
+    }
+
+    private Manufacturer createNew(ManufacturerUpsertDto request) {
         final Manufacturer manufacturer = Manufacturer.builder()
                 .name(request.name())
                 .country(request.country())
@@ -32,7 +56,7 @@ public class ManufacturerService {
         final Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
         log.atInfo().log(() -> "Created manufacturer: " + savedManufacturer);
 
-        return new ManufacturerUpsertResponseDto(savedManufacturer.getId(), savedManufacturer.getName());
+        return savedManufacturer;
     }
 
     @Transactional
@@ -40,12 +64,17 @@ public class ManufacturerService {
         Manufacturer manufacturer = manufacturerRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Manufacturer with id " + id + " not found"));
 
-        // Don't allow clearing the name or country
-        if (request.name() != null) {
+        // Don't allow clearing the name
+        if (StringUtils.isNotBlank(request.name())) {
             manufacturer.setName(request.name());
         }
-        if (request.country() != null) {
-            manufacturer.setCountry(request.country());
+        manufacturer.setCountry(request.country());
+
+        if (manufacturerRepository.existsByName(manufacturer.getName())) {
+            log.warn("Attempted to update manufacturer with duplicate name: {}", manufacturer.getName());
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST,
+                    "Manufacturer with name " + manufacturer.getName() + " already exists");
         }
 
         Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);

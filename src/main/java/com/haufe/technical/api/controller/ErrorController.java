@@ -29,6 +29,8 @@ public class ErrorController {
 
     /**
      * Handles PropertyReferenceException and returns a ResponseEntity with the error details.
+     * This exception is typically thrown when a property reference in a query method is invalid,
+     * for example, when in the pageable parameter the sort field is not valid.
      *
      * @param ex the PropertyReferenceException to handle
      * @return a ResponseEntity containing the error details
