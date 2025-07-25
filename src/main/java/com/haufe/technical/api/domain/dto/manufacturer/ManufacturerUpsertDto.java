@@ -1,3 +1,3 @@
-package com.haufe.technical.api.controller.dto.manufacturer;
+package com.haufe.technical.api.domain.dto.manufacturer;
 
 public record ManufacturerUpsertDto(String name, String country) {}

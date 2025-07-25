@@ -1,4 +1,4 @@
-package com.haufe.technical.api.domain.repository;
+package com.haufe.technical.api.repository;
 
 import com.haufe.technical.api.domain.entity.Manufacturer;
 import org.springframework.data.r2dbc.repository.R2dbcRepository;

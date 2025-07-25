@@ -1,10 +1,10 @@
 package com.haufe.technical.api.controller;
 
 import com.haufe.technical.api.config.TestSecurityConfig;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerListResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerReadResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerListResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerReadResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertResponseDto;
 import com.haufe.technical.api.service.ManufacturerService;
 import com.haufe.technical.api.utils.RestResponsePage;
 import org.junit.jupiter.api.Assertions;

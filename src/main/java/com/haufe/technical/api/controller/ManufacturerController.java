@@ -1,10 +1,9 @@
 package com.haufe.technical.api.controller;
 
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerListResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerReadResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertResponseDto;
-import com.haufe.technical.api.exception.ApiException;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerListResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerReadResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertResponseDto;
 import com.haufe.technical.api.service.ManufacturerService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -37,6 +37,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerUpsertResponseDto} response containing created manufacturer details
      */
     @PostMapping()
+    @PreAuthorize("hasRole('ADMIN')")
     public Mono<ManufacturerUpsertResponseDto> create(@RequestBody ManufacturerUpsertDto request) {
         return manufacturerService.create(request);
     }
@@ -47,10 +48,11 @@ public class ManufacturerController {
      * @param id      the ID of the manufacturer to update
      * @param request the {@link ManufacturerUpsertDto} request containing updated manufacturer details
      * @return the {@link ManufacturerUpsertResponseDto} response containing updated manufacturer details
-     * @throws ApiException if the manufacturer with the given ID is not found
      */
     @PutMapping("{id}")
-    public Mono<ManufacturerUpsertResponseDto> update(@PathVariable Long id, @RequestBody ManufacturerUpsertDto request) throws ApiException {
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANUFACTURER') and #id == authentication.principal.id)")
+    public Mono<ManufacturerUpsertResponseDto> update(@PathVariable Long id,
+                                                      @RequestBody ManufacturerUpsertDto request) {
         return manufacturerService.update(id, request);
     }
 
@@ -59,10 +61,9 @@ public class ManufacturerController {
      *
      * @param id the ID of the manufacturer to read
      * @return the {@link ManufacturerReadResponseDto} response containing manufacturer details
-     * @throws ApiException if the manufacturer with the given ID is not found
      */
     @GetMapping("{id}")
-    public Mono<ManufacturerReadResponseDto> read(@PathVariable Long id) throws ApiException {
+    public Mono<ManufacturerReadResponseDto> read(@PathVariable Long id) {
         return manufacturerService.read(id);
     }
 
@@ -79,7 +80,8 @@ public class ManufacturerController {
     }
 
     @DeleteMapping("{id}")
-    public Mono<Void> delete(@PathVariable Long id) throws ApiException {
+    @PreAuthorize("hasRole('ADMIN')")
+    public Mono<Void> delete(@PathVariable Long id) {
         return manufacturerService.delete(id);
     }
 }

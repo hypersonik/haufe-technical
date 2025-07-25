@@ -1,3 +1,3 @@
-package com.haufe.technical.api.controller.dto.beer;
+package com.haufe.technical.api.domain.dto.beer;
 
 public record BeerUpsertResponseDto(Long id, String name) {}

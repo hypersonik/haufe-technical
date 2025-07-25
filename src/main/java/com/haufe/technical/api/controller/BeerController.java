@@ -1,9 +1,9 @@
 package com.haufe.technical.api.controller;
 
-import com.haufe.technical.api.controller.dto.beer.BeerListResponseDto;
-import com.haufe.technical.api.controller.dto.beer.BeerReadResponseDto;
-import com.haufe.technical.api.controller.dto.beer.BeerUpsertDto;
-import com.haufe.technical.api.controller.dto.beer.BeerUpsertResponseDto;
+import com.haufe.technical.api.domain.dto.beer.BeerListResponseDto;
+import com.haufe.technical.api.domain.dto.beer.BeerReadResponseDto;
+import com.haufe.technical.api.domain.dto.beer.BeerUpsertDto;
+import com.haufe.technical.api.domain.dto.beer.BeerUpsertResponseDto;
 import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.service.BeerService;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,10 +49,9 @@ public class BeerController {
      * @param id      the ID of the beer to update
      * @param request the {@link BeerUpsertDto} request containing updated beer details
      * @return the {@link BeerUpsertResponseDto} response containing updated beer details
-     * @throws ApiException if the beer with the given ID is not found
      */
     @PutMapping("{id}")
-    public Mono<BeerUpsertResponseDto> update(@PathVariable Long id, @RequestBody BeerUpsertDto request) throws ApiException {
+    public Mono<BeerUpsertResponseDto> update(@PathVariable Long id, @RequestBody BeerUpsertDto request) {
         return beerService.update(id, request);
     }
 
@@ -61,10 +60,9 @@ public class BeerController {
      *
      * @param id the ID of the beer to read
      * @return the {@link BeerReadResponseDto} response containing beer details
-     * @throws ApiException if the beer with the given ID is not found
      */
     @GetMapping("{id}")
-    public Mono<BeerReadResponseDto> read(@PathVariable Long id) throws ApiException {
+    public Mono<BeerReadResponseDto> read(@PathVariable Long id) {
         return beerService.read(id);
     }
 
@@ -81,7 +79,7 @@ public class BeerController {
     }
 
     @DeleteMapping("{id}")
-    public Mono<Void> delete(@PathVariable Long id) throws ApiException {
+    public Mono<Void> delete(@PathVariable Long id) {
         return beerService.delete(id);
     }
 }

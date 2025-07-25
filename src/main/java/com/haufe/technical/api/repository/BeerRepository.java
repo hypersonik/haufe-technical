@@ -1,4 +1,4 @@
-package com.haufe.technical.api.domain.repository;
+package com.haufe.technical.api.repository;
 
 import com.haufe.technical.api.domain.entity.Beer;
 import org.springframework.data.domain.Pageable;

@@ -1,12 +1,12 @@
 package com.haufe.technical.api.service;
 
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerListResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerReadResponseDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertDto;
-import com.haufe.technical.api.controller.dto.manufacturer.ManufacturerUpsertResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerListResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerReadResponseDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertDto;
+import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertResponseDto;
 import com.haufe.technical.api.domain.entity.Manufacturer;
-import com.haufe.technical.api.domain.repository.BeerRepository;
-import com.haufe.technical.api.domain.repository.ManufacturerRepository;
+import com.haufe.technical.api.repository.BeerRepository;
+import com.haufe.technical.api.repository.ManufacturerRepository;
 import com.haufe.technical.api.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
