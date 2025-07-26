@@ -9,14 +9,14 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.time.Instant;
 
 @Table
-@Builder
+@Builder(toBuilder = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Manufacturer {
     @Id
     private Long id;
-    private String name;
+    private Long userId;
     private String country;
 
     @EqualsAndHashCode.Exclude

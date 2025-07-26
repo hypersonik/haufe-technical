@@ -9,15 +9,19 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
     ```bash
     git clone https://github.com/hypersonik/haufe-technical.git
     ```
-2. Navigate to the project directory:
+2. Checkout the `webflux` branch:
+    ```bash
+    git checkout webflux
+    ```
+3. Navigate to the project directory:
     ```bash
     cd haufe-technical
     ```
-3. Build the project using Maven:
+4. Build the project using Maven:
     ```bash
     mvnw clean package
     ```
-4. Build the Docker image:
+5. Build the Docker image:
     ```bash
     docker build -t beer-api .
     ```
@@ -38,6 +42,7 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
 
 - Even though the documentation says that the API should be built with **Spring Data JPA**, I chose to implement it using **Spring Webflux + Spring Data R2DBC**.
   The reason was that during the first interview, it was mentioned that **Haufe Group** is using (or interested in using) **Spring Webflux**, so I decided that would be interesting using it for this test.
+- In some places (like user password update), security is not enforced for the sake of simplicity, but in a real-world application, it would be important to secure them.
 
 ### Accessing the API
 - Base URL: `http://localhost:8080/api`

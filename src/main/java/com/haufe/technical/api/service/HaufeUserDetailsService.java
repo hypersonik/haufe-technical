@@ -16,14 +16,15 @@ public class HaufeUserDetailsService implements ReactiveUserDetailsService {
 
     @Override
     public Mono<UserDetails> findByUsername(String username) {
-        return userRepository.findByNameAndEnabledIsTrue(username)
+        return userRepository.findByNameAndEnabled(username)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found or not enabled: " + username)))
                 .map(user -> HaufeUserDetails.builder()
-                        .id(user.getId())
-                        .manufacturerId(user.getManufacturerId())
-                        .username(user.getName())
-                        .password(user.getPassword())
+                        .id(user.id())
+                        .manufacturerId(user.manufacturerId())
+                        .username(user.name())
+                        .password(user.password())
                         .build()
-                        .roles(StringUtils.split(user.getRoles(), ','))
+                        .roles(StringUtils.split(user.roles(), ','))
                 );
     }
 }

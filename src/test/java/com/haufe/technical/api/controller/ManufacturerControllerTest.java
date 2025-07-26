@@ -48,6 +48,7 @@ class ManufacturerControllerTest {
     private static final long THE_ID = 1L;
     private static final String THE_MANUFACTURER = "The Manufacturer";
     private static final String THE_COUNTRY = "The Country";
+    public static final String THE_PASSWORD = "1234";
 
     @MockitoBean
     private ManufacturerService manufacturerService;
@@ -58,7 +59,7 @@ class ManufacturerControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void testCreate() {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY, THE_PASSWORD);
         ManufacturerUpsertResponseDto response = new ManufacturerUpsertResponseDto(THE_ID, THE_MANUFACTURER);
         when(manufacturerService.create(any(ManufacturerUpsertDto.class))).thenReturn(Mono.just(response));
 
@@ -85,7 +86,7 @@ class ManufacturerControllerTest {
     @ParameterizedTest
     @MethodSource
     void testCreateWithWrongRole(String roles, HttpStatus expectedStatus) {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY, null);
 
         if (roles != null) {
             webTestClient = webTestClient.mutateWith(mockUser().roles(roles));
@@ -103,7 +104,7 @@ class ManufacturerControllerTest {
 
     @Test
     void testCreateWithAnonymousRole() {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY, null);
 
         webTestClient
                 .post().uri("/api/manufacturer")
@@ -130,7 +131,7 @@ class ManufacturerControllerTest {
     @ParameterizedTest
     @MethodSource
     void testUpdate(UserDetails userDetails) {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY, THE_PASSWORD);
         when(manufacturerService.update(anyLong(), any(ManufacturerUpsertDto.class)))
                 .thenReturn(Mono.just(new ManufacturerUpsertResponseDto(THE_ID, THE_MANUFACTURER)));
 
@@ -165,7 +166,10 @@ class ManufacturerControllerTest {
     @ParameterizedTest
     @MethodSource
     void testUpdate_WrongRole(UserDetails userDetails, HttpStatus expectedStatus) {
-        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY);
+        ManufacturerUpsertDto request = new ManufacturerUpsertDto(THE_MANUFACTURER, THE_COUNTRY, THE_PASSWORD);
+
+        when(manufacturerService.update(anyLong(), any(ManufacturerUpsertDto.class)))
+                .thenReturn(Mono.just(new ManufacturerUpsertResponseDto(THE_ID, THE_MANUFACTURER)));
 
         if (userDetails != null) {
             webTestClient = webTestClient.mutateWith(mockUser(userDetails));

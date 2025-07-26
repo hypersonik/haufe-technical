@@ -7,6 +7,7 @@ import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertRespons
 import com.haufe.technical.api.service.ManufacturerService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -63,6 +64,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerReadResponseDto} response containing manufacturer details
      */
     @GetMapping("{id}")
+    @PermitAll
     public Mono<ManufacturerReadResponseDto> read(@PathVariable Long id) {
         return manufacturerService.read(id);
     }
@@ -73,6 +75,7 @@ public class ManufacturerController {
      * @return a list of {@link ManufacturerListResponseDto} containing then id and name of all manufacturers
      */
     @GetMapping()
+    @PermitAll
     public Mono<Page<ManufacturerListResponseDto>> list(
             @Parameter(example = PAGE_PARAMETER_EXAMPLE)
             @PageableDefault(sort = "name") Pageable pageable) {
