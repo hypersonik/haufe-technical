@@ -50,7 +50,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerUpsertResponseDto} response containing updated manufacturer details
      */
     @PutMapping("{id}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANUFACTURER') and #id == authentication.principal.id)")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANUFACTURER') and #id == authentication.principal.manufacturerId)")
     public Mono<ManufacturerUpsertResponseDto> update(@PathVariable Long id,
                                                       @RequestBody ManufacturerUpsertDto request) {
         return manufacturerService.update(id, request);

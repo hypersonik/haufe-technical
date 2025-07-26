@@ -13,8 +13,9 @@ import java.util.List;
 
 @Data
 @Builder
-public class CustomUserDetails implements UserDetails {
+public class HaufeUserDetails implements UserDetails {
     private Long id;
+    private Long manufacturerId;
     private String username;
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
@@ -40,10 +41,10 @@ public class CustomUserDetails implements UserDetails {
      * </p>
      * @param roles the roles for this user (i.e. USER, ADMIN, etc). Cannot be null,
      * contain null values or start with "ROLE_"
-     * @return the {@link CustomUserDetails} for method chaining (i.e. to populate
+     * @return the {@link HaufeUserDetails} for method chaining (i.e. to populate
      * additional attributes for this user)
      */
-    public CustomUserDetails roles(String... roles) {
+    public HaufeUserDetails roles(String... roles) {
         List<GrantedAuthority> authorities = new ArrayList<>(roles.length);
         for (String role : roles) {
             Assert.isTrue(!role.startsWith("ROLE_"),

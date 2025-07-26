@@ -22,6 +22,9 @@ public class User {
     private boolean enabled;
 
     @EqualsAndHashCode.Exclude
+    private Long manufacturerId;
+
+    @EqualsAndHashCode.Exclude
     @CreatedDate
     private Instant createdAt;
     @EqualsAndHashCode.Exclude

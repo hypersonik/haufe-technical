@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -38,6 +39,7 @@ public class BeerController {
      * @return the {@link BeerUpsertResponseDto} response containing created beer details
      */
     @PostMapping("{manufacturerId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANUFACTURER') and #manufacturerId == authentication.principal.manufacturerId)")
     public Mono<BeerUpsertResponseDto> create(@PathVariable Long manufacturerId,
                                               @RequestBody BeerUpsertDto request) throws ApiException {
         return beerService.create(manufacturerId, request);
@@ -51,6 +53,7 @@ public class BeerController {
      * @return the {@link BeerUpsertResponseDto} response containing updated beer details
      */
     @PutMapping("{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public Mono<BeerUpsertResponseDto> update(@PathVariable Long id, @RequestBody BeerUpsertDto request) {
         return beerService.update(id, request);
     }
@@ -79,6 +82,7 @@ public class BeerController {
     }
 
     @DeleteMapping("{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public Mono<Void> delete(@PathVariable Long id) {
         return beerService.delete(id);
     }

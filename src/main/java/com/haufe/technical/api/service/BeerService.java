@@ -5,11 +5,13 @@ import com.haufe.technical.api.domain.dto.beer.BeerReadResponseDto;
 import com.haufe.technical.api.domain.dto.beer.BeerUpsertDto;
 import com.haufe.technical.api.domain.dto.beer.BeerUpsertResponseDto;
 import com.haufe.technical.api.domain.entity.Beer;
+import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.repository.BeerRepository;
 import com.haufe.technical.api.repository.ManufacturerRepository;
-import com.haufe.technical.api.exception.ApiException;
+import com.haufe.technical.api.utils.ReactiveSecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,34 +49,40 @@ public class BeerService {
                 .map(savedBeer -> {
                     log.atInfo().log(() -> "Created beer: " + savedBeer);
                     return new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName());
-                })
-                .doOnSuccess(savedBeer -> log.atInfo().log(() -> "Created beer: " + savedBeer));
+                });
     }
 
     @Transactional
     public Mono<BeerUpsertResponseDto> update(Long id, BeerUpsertDto request) {
+        return ReactiveSecurityUtils.getManufacturerId()
+                .flatMap(manufacturerId -> update(id, request, manufacturerId.orElse(null)));
+    }
+
+    private Mono<BeerUpsertResponseDto> update(Long id, BeerUpsertDto request, Long manufacturerId) {
         return beerRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found.")))
                 .flatMap(beer -> {
-                    // Update fields only if they are not null
-                    if (request.name() != null) {
-                        beer.setName(request.name());
+                    // Check if the beer belongs to the manufacturer.
+                    // If manufacturerId is null, it means the user is not a manufacturer.
+                    // If the user is not a manufacturer and this code is reached,
+                    // it means the user is an admin or has permission to update any beer.
+                    if (manufacturerId != null && !beer.getManufacturerId().equals(manufacturerId)) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.FORBIDDEN,
+                                "You don't have permission to update this beer"));
                     }
-                    if (request.avb() != null) {
-                        beer.setAbv(request.avb());
-                    }
-                    if (request.style() != null) {
-                        beer.setStyle(request.style());
-                    }
-                    if (request.description() != null) {
-                        beer.setDescription(request.description());
-                    }
+                    return Mono.just(beer);
+                })
+                .flatMap(beer -> {
+                    // Update fields only if they are not null or blank
+                    if (StringUtils.isNotBlank(request.name()))         beer.setName(request.name());
+                    if (request.avb() != null)                          beer.setAbv(request.avb());
+                    if (StringUtils.isNotBlank(request.style()))        beer.setStyle(request.style());
+                    if (StringUtils.isNotBlank(request.description()))  beer.setDescription(request.description());
+
                     return beerRepository.save(beer);
                 })
-                .map(savedBeer -> {
-                    log.atInfo().log(() -> "Updated beer: " + savedBeer);
-                    return new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName());
-                })
+                .map(savedBeer -> new BeerUpsertResponseDto(savedBeer.getId(), savedBeer.getName()))
                 .doOnSuccess(savedBeer -> log.atInfo().log(() -> "Updated beer: " + savedBeer))
                 .doOnError(exception -> log.error("Error updating beer with ID {}: {}", id, exception.getMessage()));
     }
@@ -101,13 +109,27 @@ public class BeerService {
     }
 
     public Mono<Void> delete(Long id) {
-        return beerRepository.existsById(id)
-                .flatMap(exists -> {
-                    if (!exists) {
-                        return Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found"));
+        return ReactiveSecurityUtils.getManufacturerId()
+                        .flatMap(manufacturerId -> delete(id, manufacturerId.orElse(null)));
+    }
+
+    private Mono<Void> delete(Long id, Long manufacturerId) {
+        return beerRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ApiException(HttpStatus.NOT_FOUND, "Beer with ID " + id + " not found.")))
+                .flatMap(beer -> {
+                    // Check if the beer belongs to the manufacturer.
+                    // If manufacturerId is null, it means the user is not a manufacturer.
+                    // If the user is not a manufacturer and this code is reached,
+                    // it means the user is an admin or has permission to delete any beer.
+                    if (manufacturerId != null && !beer.getManufacturerId().equals(manufacturerId)) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.FORBIDDEN,
+                                "You don't have permission to delete this beer"));
                     }
-                    return beerRepository.deleteById(id);
+                    return Mono.just(beer);
                 })
-                .doOnSuccess(aVoid -> log.info("Deleted beer with id: {}", id));
+                .flatMap(beerRepository::delete)
+                .doOnSuccess(aVoid -> log.info("Deleted beer with id: {}", id))
+                .doOnError(exception -> log.error("Error deleting beer with ID {}: {}", id, exception.getMessage()));
     }
 }

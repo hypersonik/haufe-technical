@@ -1,6 +1,6 @@
 package com.haufe.technical.api.service;
 
-import com.haufe.technical.api.auth.CustomUserDetails;
+import com.haufe.technical.api.auth.HaufeUserDetails;
 import com.haufe.technical.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -11,14 +11,15 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class CustomUserDetailsService implements ReactiveUserDetailsService {
+public class HaufeUserDetailsService implements ReactiveUserDetailsService {
     private final UserRepository userRepository;
 
     @Override
     public Mono<UserDetails> findByUsername(String username) {
         return userRepository.findByNameAndEnabledIsTrue(username)
-                .map(user -> CustomUserDetails.builder()
+                .map(user -> HaufeUserDetails.builder()
                         .id(user.getId())
+                        .manufacturerId(user.getManufacturerId())
                         .username(user.getName())
                         .password(user.getPassword())
                         .build()
