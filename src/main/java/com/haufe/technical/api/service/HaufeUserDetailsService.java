@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -20,7 +21,7 @@ public class HaufeUserDetailsService implements ReactiveUserDetailsService {
     @Override
     public Mono<UserDetails> findByUsername(String username) {
         return userRepository.findByNameAndEnabled(username)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found or not enabled: " + username)))
+                .switchIfEmpty(Mono.error(new UsernameNotFoundException("User not found or not enabled: " + username)))
                 .map(user -> HaufeUserDetails.builder()
                         .id(user.id())
                         .manufacturerId(user.manufacturerId())
