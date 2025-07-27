@@ -9,13 +9,13 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
     ```bash
     git clone https://github.com/hypersonik/haufe-technical.git
     ```
-2. Checkout the `webflux` branch:
-    ```bash
-    git checkout webflux
-    ```
-3. Navigate to the project directory:
+2. Navigate to the project directory:
     ```bash
     cd haufe-technical
+    ```
+3. Checkout the `webflux` branch:
+    ```bash
+    git checkout webflux
     ```
 4. Build the project using Maven:
     ```bash
@@ -52,13 +52,12 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
 ### Accessing the API
 - Base URL: `http://localhost:8080/api`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Postman commands for testing the API endpoints are provided below.
-
-- curl commands for testing:
+- cURL commands for testing:
     ```bash
-    #Basic Authentication
+    # Basic Authentication
     # Replace 'username' and 'password' with your actual credentials
-    curl -u username:password http://localhost:8080/api/beers
+    # For tests use admin:1234 or lovilot:1234
+    curl -u username:password http://localhost:8080/api/beer
   
     # Get all manufacturers
     curl -X GET "http://localhost:8080/api/manufacturers" -H "accept: application/json"
@@ -74,20 +73,20 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
     # Search manufacturers by name
     curl -X GET "http://localhost:8080/api/manufacturers/search?name=ManufacturerName" -H "accept: application/json"
     # Search beers by name, type, ABV, or manufacturer
-    curl -X GET "http://localhost:8080/api/beers/search?name=BeerName&type=Lager&abv=5.0&manufacturerId=1" -H "accept: application/json"
+    curl -X GET "http://localhost:8080/api/beer/search?name=BeerName&type=Lager&abv=5.0&manufacturerId=1" -H "accept: application/json"
     # Pagination and sorting for manufacturers
     curl -X GET "http://localhost:8080/api/manufacturers?page=0&size=10&sort=name,asc" -H "accept: application/json"
     # Pagination and sorting for beers
-    curl -X GET "http://localhost:8080/api/beers?page=0&size=10&sort=name,asc" -H "accept: application/json"
+    curl -X GET "http://localhost:8080/api/beer?page=0&size=10&sort=name,asc" -H "accept: application/json"
   
     # Get all beers
-    curl -X GET "http://localhost:8080/api/beers" -H "accept: application/json"
+    curl -X GET "http://localhost:8080/api/beer" -H "accept: application/json"
     # Get beer by ID
-    curl -X GET "http://localhost:8080/api/beers/{id}" -H "accept: application/json"
+    curl -X GET "http://localhost:8080/api/beer/{id}" -H "accept: application/json"
     # Create a new beer
-    curl -X POST "http://localhost:8080/api/beers" -H "Content-Type: application/json" -d '{"name": "Beer Name", "manufacturerId": 1}'
+    curl -X POST "http://localhost:8080/api/beer" -H "Content-Type: application/json" -d '{"name": "Beer Name", "manufacturerId": 1}'
     # Update a beer
-    curl -X PUT "http://localhost:8080/api/beers/{id}" -H "Content-Type: application/json" -d '{"name": "Updated Beer Name"}'
+    curl -X PUT "http://localhost:8080/api/beer/{id}" -H "Content-Type: application/json" -d '{"name": "Updated Beer Name"}'
     # Delete a beer
-    curl -X DELETE "http://localhost:8080/api/beers/{id}"
+    curl -X DELETE "http://localhost:8080/api/beer/{id}"
     ```
