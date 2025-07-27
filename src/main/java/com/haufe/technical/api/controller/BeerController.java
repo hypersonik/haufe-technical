@@ -9,12 +9,12 @@ import com.haufe.technical.api.service.BeerService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -80,7 +80,7 @@ public class BeerController {
      * @return a list of {@link BeerListResponseDto} containing then id and name of all beers
      */
     @GetMapping()
-    public Flux<BeerListResponseDto> list(
+    public Mono<Page<BeerListResponseDto>> list(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Float minAbv,
             @RequestParam(required = false) Float maxAbv,

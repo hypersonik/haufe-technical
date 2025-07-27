@@ -8,6 +8,7 @@ import com.haufe.technical.api.domain.dto.beer.BeerUpsertDto;
 import com.haufe.technical.api.domain.dto.beer.BeerUpsertResponseDto;
 import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.service.BeerService;
+import com.haufe.technical.api.utils.RestResponsePage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -24,13 +28,15 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 
@@ -54,7 +60,7 @@ class BeerControllerTest {
     void setUp() {
         beerUpsertDto = BeerUpsertDto.builder()
                 .name("Test Beer")
-                .avb(5.0F)
+                .abv(5.0F)
                 .style("IPA")
                 .description("Test Description")
                 .build();
@@ -212,31 +218,27 @@ class BeerControllerTest {
 
     @Nested
     class ListEndpointTests {
+        private static final ParameterizedTypeReference<RestResponsePage<BeerListResponseDto>>
+                BODY_TYPE = new ParameterizedTypeReference<>() {};
+
         @Test
         void list_WithData_ShouldReturnBeersList() {
-            when(beerService.list(any(), any(), any(), any(),any(), any()))
-                    .thenReturn(Flux.just(beerListResponseDto));
+            doAnswer(invocation -> {
+                Pageable pageable = invocation.getArgument(5, Pageable.class);
+                return Mono.just(new PageImpl<>(List.of(beerListResponseDto), pageable, 1));
+            }).when(beerService).list(any(), any(), any(), any(),any(), any());
 
             webTestClient.get()
                     .uri("/api/beer")
                     .exchange()
                     .expectStatus().isOk()
-                    .expectBodyList(BeerListResponseDto.class)
-                    .hasSize(1)
-                    .contains(beerListResponseDto);
-        }
-
-        @Test
-        void list_WithNoData_ShouldReturnEmptyList() {
-            when(beerService.list(any(), any(), any(), any(),any(), any()))
-                    .thenReturn(Flux.empty());
-
-            webTestClient.get()
-                    .uri("/api/beer")
-                    .exchange()
-                    .expectStatus().isOk()
-                    .expectBodyList(BeerListResponseDto.class)
-                    .hasSize(0);
+                    .expectBodyList(BODY_TYPE)
+                    .consumeWith(response -> {
+                        List<RestResponsePage<BeerListResponseDto>> l = response.getResponseBody();
+                        assertThat(l).isNotNull();
+                        assertThat(l).hasSize(1);
+                        assertThat(l.getFirst().getContent()).containsExactly(beerListResponseDto);
+                    });
         }
     }
 

@@ -12,13 +12,14 @@ import com.haufe.technical.api.utils.ReactiveSecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -46,12 +47,13 @@ public class BeerService {
 
                     final Beer beer = Beer.builder()
                             .name(request.name())
-                            .abv(request.avb())
+                            .abv(request.abv())
                             .style(request.style())
                             .description(request.description())
                             .manufacturerId(manufacturerId)
                             .build();
 
+                    log.info("creating beer: {}", beer);
                     return beerRepository.save(beer);
                 })
                 .map(savedBeer -> {
@@ -84,7 +86,7 @@ public class BeerService {
                 .flatMap(beer -> {
                     // Update fields only if they are not null or blank
                     if (StringUtils.isNotBlank(request.name()))         beer.setName(request.name());
-                    if (request.avb() != null)                          beer.setAbv(request.avb());
+                    if (request.abv() != null)                          beer.setAbv(request.abv());
                     if (StringUtils.isNotBlank(request.style()))        beer.setStyle(request.style());
                     if (StringUtils.isNotBlank(request.description()))  beer.setDescription(request.description());
 
@@ -117,90 +119,97 @@ public class BeerService {
      * @param pageable        Pagination information.
      * @return Flux of BeerListResponseDto containing beer details.
      */
-    public Flux<BeerListResponseDto> list(String name,
-                                          Float minAbv,
-                                          Float maxAbv,
-                                          String style,
-                                          Long manufacturerId,
-                                          Pageable pageable) {
-        return flexibleList(name, minAbv, maxAbv, style, manufacturerId, pageable)
-                .map(beer -> new BeerListResponseDto(
-                        beer.getId(),
-                        beer.getName(),
-                        beer.getAbv(),
-                        beer.getStyle(),
-                        beer.getDescription()));
-    }
-
-    private Flux<Beer> flexibleList(
-            String name,
-            Float minAbv,
-            Float maxAbv,
-            String style,
-            Long manufacturerId,
-            Pageable pageable
-    ) {
+    public Mono<Page<BeerListResponseDto>> list(String name,
+                                                Float minAbv,
+                                                Float maxAbv,
+                                                String style,
+                                                Long manufacturerId,
+                                                Pageable pageable) {
         Sort sort = pageable.getSort();
         Sort.Order order = sort.get().findFirst().orElseGet(() -> Sort.Order.by("id"));
 
         int page = pageable.getPageNumber();
         int pageSize = pageable.getPageSize();
         if (page < 0 || pageSize <= 0) {
-            return Flux.error(new ApiException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters."));
+            return Mono.error(new ApiException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters."));
         }
 
-        String sql = buildListSql(name, minAbv, maxAbv, style, manufacturerId, order, page * pageSize, pageSize);
-        log.debug("Generated SQL: {}", sql);
+        SqlList sql = new SqlList(name, minAbv, maxAbv, style, manufacturerId, order, page * pageSize, pageSize);
+        Mono<List<BeerListResponseDto>> beers = sql.getBeers();
+        Mono<Long> count = sql.getCount();
 
-        DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(sql);
-        if (StringUtils.isNotBlank(name))  spec = spec.bind("name", name);
-        if (minAbv != null)                spec = spec.bind("minAbv", minAbv);
-        if (maxAbv != null)                spec = spec.bind("maxAbv", maxAbv);
-        if (StringUtils.isNotBlank(style)) spec = spec.bind("style", style);
-        if (manufacturerId != null)        spec = spec.bind("manufacturerId", manufacturerId);
-
-        return spec
-                .map((row, metadata) -> Beer.builder()
-                        .id(row.get("id", Long.class))
-                        .name(row.get("name", String.class))
-                        .abv(row.get("abv", Float.class))
-                        .style(row.get("style", String.class))
-                        .description(row.get("description", String.class))
-                        .manufacturerId(row.get("manufacturer_id", Long.class))
-                        .build())
-                .all();
+        return Mono.zip(beers, count)
+                .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
     }
 
-    private String buildListSql(
-            String name,
-            Float minAbv,
-            Float maxAbv,
-            String style,
-            Long manufacturerId,
-            Sort.Order order,
-            int offset,
-            int pageSize) {
+    private class SqlList {
+        private final String name;
+        private final Float minAbv;
+        private final Float maxAbv;
+        private final String style;
+        private final Long manufacturerId;
 
-        String sortProperty = order.getProperty();
-        String sortDirection = order.getDirection().name();
+        private final String listSql;
+        private final String countSql;
 
-        // Allowlist of allowed columns to prevent SQL injection
-        if (!ALLOWED_SORT_COLUMNS.contains(sortProperty.toLowerCase())) {
-            sortProperty = "id"; // Safe fallback
+        public SqlList(String name, Float minAbv, Float maxAbv, String style, Long manufacturerId, Sort.Order order, int offset, int pageSize) {
+            this.name = name;
+            this.minAbv = minAbv;
+            this.maxAbv = maxAbv;
+            this.style = style;
+            this.manufacturerId = manufacturerId;
+
+            String sortProperty = order.getProperty();
+            String sortDirection = order.getDirection().name();
+
+            // Allowlist of allowed columns to prevent SQL injection
+            if (!ALLOWED_SORT_COLUMNS.contains(sortProperty.toLowerCase())) {
+                sortProperty = "id"; // Safe fallback
+            }
+
+            StringBuilder whereClause = new StringBuilder();
+
+            if (StringUtils.isNotBlank(name))  whereClause.append(" AND name ILIKE CONCAT('%', :name, '%')");
+            if (minAbv != null)                whereClause.append(" AND abv >= :minAbv");
+            if (maxAbv != null)                whereClause.append(" AND abv <= :maxAbv");
+            if (StringUtils.isNotBlank(style)) whereClause.append(" AND style ILIKE CONCAT('%', :style, '%')");
+            if (manufacturerId != null)        whereClause.append(" AND manufacturer_id = :manufacturerId");
+
+            String limits = " ORDER BY " + sortProperty + " " + sortDirection + " LIMIT " + pageSize + " OFFSET " + offset;
+
+            listSql = "SELECT * FROM BEER WHERE 1=1" + whereClause + limits;
+            countSql = "SELECT COUNT(*) AS count FROM BEER WHERE 1=1" + whereClause;
         }
 
-        StringBuilder sql = new StringBuilder("SELECT * FROM BEER WHERE 1=1");
+        public Mono<List<BeerListResponseDto>> getBeers() {
+            DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(listSql);
+            return bindParams(spec)
+                    .map(row -> BeerListResponseDto.builder()
+                            .id(row.get("id", Long.class))
+                            .name(row.get("name", String.class))
+                            .abv(row.get("abv", Float.class))
+                            .style(row.get("style", String.class))
+                            .description(row.get("description", String.class))
+                            .build())
+                    .all()
+                    .collectList();
+        }
 
-        if (StringUtils.isNotBlank(name))  sql.append(" AND name ILIKE CONCAT('%', :name, '%')");
-        if (minAbv != null)                sql.append(" AND abv >= :minAbv");
-        if (maxAbv != null)                sql.append(" AND abv <= :maxAbv");
-        if (StringUtils.isNotBlank(style)) sql.append(" AND style ILIKE CONCAT('%', :style, '%')");
-        if (manufacturerId != null)        sql.append(" AND manufacturer_id = :manufacturerId");
+        public Mono<Long> getCount() {
+            DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(countSql);
+            return bindParams(spec)
+                    .map(row -> row.get("count", Long.class))
+                    .first();
+        }
 
-        sql.append(" ORDER BY ").append(sortProperty).append(" ").append(sortDirection);
-        sql.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
-
-        return sql.toString();
+        private DatabaseClient.GenericExecuteSpec bindParams(DatabaseClient.GenericExecuteSpec spec) {
+            if (StringUtils.isNotBlank(name))  spec = spec.bind("name", name);
+            if (minAbv != null)                spec = spec.bind("minAbv", minAbv);
+            if (maxAbv != null)                spec = spec.bind("maxAbv", maxAbv);
+            if (StringUtils.isNotBlank(style)) spec = spec.bind("style", style);
+            if (manufacturerId != null)        spec = spec.bind("manufacturerId", manufacturerId);
+            return spec;
+        }
     }
 
     public Mono<Void> delete(Long id) {

@@ -44,7 +44,7 @@ class BeerServiceTest {
             Beer beer = Beer.builder()
                     .id(1L)
                     .name(request.name())
-                    .abv(request.avb())
+                    .abv(request.abv())
                     .style(request.style())
                     .description(request.description())
                     .manufacturerId(manufacturerId)
