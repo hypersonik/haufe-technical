@@ -13,18 +13,26 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class BeerService {
+    private static final List<String> ALLOWED_SORT_COLUMNS = List.of("id", "name", "abv", "style", "description");
+
     private final ManufacturerRepository manufacturerRepository;
     private final BeerRepository beerRepository;
+
+    private final DatabaseClient databaseClient;
 
     @Transactional
     public Mono<BeerUpsertResponseDto> create(Long manufacturerId, BeerUpsertDto request) throws ApiException {
@@ -98,14 +106,101 @@ public class BeerService {
                         beer.getDescription()));
     }
 
-    public Flux<BeerListResponseDto> list(Pageable pageable) {
-        return beerRepository.findAllBy(pageable)
+    /**
+     * Lists beers based on various filters and pagination.
+     *
+     * @param name            Optional name filter (case-insensitive).
+     * @param minAbv          Optional minimum ABV filter.
+     * @param maxAbv          Optional maximum ABV filter.
+     * @param style           Optional style filter (case-insensitive).
+     * @param manufacturerId  Optional manufacturer ID filter.
+     * @param pageable        Pagination information.
+     * @return Flux of BeerListResponseDto containing beer details.
+     */
+    public Flux<BeerListResponseDto> list(String name,
+                                          Float minAbv,
+                                          Float maxAbv,
+                                          String style,
+                                          Long manufacturerId,
+                                          Pageable pageable) {
+        return flexibleList(name, minAbv, maxAbv, style, manufacturerId, pageable)
                 .map(beer -> new BeerListResponseDto(
                         beer.getId(),
                         beer.getName(),
                         beer.getAbv(),
                         beer.getStyle(),
                         beer.getDescription()));
+    }
+
+    private Flux<Beer> flexibleList(
+            String name,
+            Float minAbv,
+            Float maxAbv,
+            String style,
+            Long manufacturerId,
+            Pageable pageable
+    ) {
+        Sort sort = pageable.getSort();
+        Sort.Order order = sort.get().findFirst().orElseGet(() -> Sort.Order.by("id"));
+
+        int page = pageable.getPageNumber();
+        int pageSize = pageable.getPageSize();
+        if (page < 0 || pageSize <= 0) {
+            return Flux.error(new ApiException(HttpStatus.BAD_REQUEST, "Invalid pagination parameters."));
+        }
+
+        String sql = buildListSql(name, minAbv, maxAbv, style, manufacturerId, order, page * pageSize, pageSize);
+        log.debug("Generated SQL: {}", sql);
+
+        DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(sql);
+        if (StringUtils.isNotBlank(name))  spec = spec.bind("name", name);
+        if (minAbv != null)                spec = spec.bind("minAbv", minAbv);
+        if (maxAbv != null)                spec = spec.bind("maxAbv", maxAbv);
+        if (StringUtils.isNotBlank(style)) spec = spec.bind("style", style);
+        if (manufacturerId != null)        spec = spec.bind("manufacturerId", manufacturerId);
+
+        return spec
+                .map((row, metadata) -> Beer.builder()
+                        .id(row.get("id", Long.class))
+                        .name(row.get("name", String.class))
+                        .abv(row.get("abv", Float.class))
+                        .style(row.get("style", String.class))
+                        .description(row.get("description", String.class))
+                        .manufacturerId(row.get("manufacturer_id", Long.class))
+                        .build())
+                .all();
+    }
+
+    private String buildListSql(
+            String name,
+            Float minAbv,
+            Float maxAbv,
+            String style,
+            Long manufacturerId,
+            Sort.Order order,
+            int offset,
+            int pageSize) {
+
+        String sortProperty = order.getProperty();
+        String sortDirection = order.getDirection().name();
+
+        // Allowlist of allowed columns to prevent SQL injection
+        if (!ALLOWED_SORT_COLUMNS.contains(sortProperty.toLowerCase())) {
+            sortProperty = "id"; // Safe fallback
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM BEER WHERE 1=1");
+
+        if (StringUtils.isNotBlank(name))  sql.append(" AND name ILIKE CONCAT('%', :name, '%')");
+        if (minAbv != null)                sql.append(" AND abv >= :minAbv");
+        if (maxAbv != null)                sql.append(" AND abv <= :maxAbv");
+        if (StringUtils.isNotBlank(style)) sql.append(" AND style ILIKE CONCAT('%', :style, '%')");
+        if (manufacturerId != null)        sql.append(" AND manufacturer_id = :manufacturerId");
+
+        sql.append(" ORDER BY ").append(sortProperty).append(" ").append(sortDirection);
+        sql.append(" LIMIT ").append(pageSize).append(" OFFSET ").append(offset);
+
+        return sql.toString();
     }
 
     public Mono<Void> delete(Long id) {

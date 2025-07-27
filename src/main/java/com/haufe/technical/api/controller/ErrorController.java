@@ -39,17 +39,6 @@ public class ErrorController {
     }
 
     /**
-     * Handles all other exceptions and returns a ResponseEntity with the error details.
-     *
-     * @param ex the Exception to handle
-     * @return a ResponseEntity containing the error details
-     */
-//    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleException(Exception ex) {
-        return new ResponseEntity<>(buildResponse(ex), HttpStatus.BAD_REQUEST);
-    }
-
-    /**
      * Builds a response map for the Exception.
      *
      * @param ex the Exception to build the response for

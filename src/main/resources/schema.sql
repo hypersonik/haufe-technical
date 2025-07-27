@@ -14,6 +14,7 @@ CREATE TABLE "USER" (
 CREATE TABLE MANUFACTURER (
     ID BIGINT NOT NULL AUTO_INCREMENT,
     USER_ID BIGINT NOT NULL,
+    NAME CHARACTER VARYING(30) NOT NULL,
     COUNTRY CHARACTER VARYING(30),
     CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UPDATED_AT TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -39,48 +40,48 @@ CREATE INDEX BEER_NAME_IDX ON BEER (NAME);
 INSERT INTO "USER" (NAME, PASSWORD, ROLES)
 VALUES
     ('admin', '{bcrypt}$2a$12$RDgzTiZFtNEaFuzXz19H3OufGKEruJHhxDRNAiepxcynkK4LXinF6', 'ADMIN'),
-    ('Lo Vilot', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
-    ('Brewdog', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Mikkeller', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Stone Brewing', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Sierra Nevada', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Brooklyn Brewery', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Lagunitas Brewing Company', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Trillium Brewing Company', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('Cantillon Brewery', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER'),
-    ('De Ranke Brewery', '{bcrypt}$2a$12$e1Z5b7z8Q3k0f4j5F9m1UOe6Y3J5Z5d8F9m1UOe6Y3J5Z5d8F9m1UOe', 'MANUFACTURER');
+    ('lovilot', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('brewdog', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('mikkeller', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('stone', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('sierranevada', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('brooklyn', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('lagunitas', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('trillium', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('cantillon', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER'),
+    ('deranke', '{bcrypt}$2a$12$YZqpg8oKM.VDJ0uSmN0I4ufKbtpybP9jKE7.AScIz0CZCmTydFr7m', 'MANUFACTURER');
 
-INSERT INTO MANUFACTURER (USER_ID, COUNTRY)
-SELECT ID, 'ES' FROM "USER" WHERE NAME = 'Lo Vilot' UNION ALL
-SELECT ID, 'UK' FROM "USER" WHERE NAME = 'Brewdog' UNION ALL
-SELECT ID, 'DK' FROM "USER" WHERE NAME = 'Mikkeller' UNION ALL
-SELECT ID, 'US' FROM "USER" WHERE NAME = 'Stone Brewing' UNION ALL
-SELECT ID, 'US' FROM "USER" WHERE NAME = 'Sierra Nevada' UNION ALL
-SELECT ID, 'US' FROM "USER" WHERE NAME = 'Brooklyn Brewery' UNION ALL
-SELECT ID, 'US' FROM "USER" WHERE NAME = 'Lagunitas Brewing Company' UNION ALL
-SELECT ID, 'US' FROM "USER" WHERE NAME = 'Trillium Brewing Company' UNION ALL
-SELECT ID, 'BE' FROM "USER" WHERE NAME = 'Cantillon Brewery' UNION ALL
-SELECT ID, 'BE' FROM "USER" WHERE NAME = 'De Ranke Brewery';
+INSERT INTO MANUFACTURER (USER_ID, NAME, COUNTRY)
+SELECT ID, 'Lo Vilot', 'ES' FROM "USER" WHERE NAME = 'lovilot' UNION ALL
+SELECT ID, 'Brewdog', 'UK' FROM "USER" WHERE NAME = 'brewdog' UNION ALL
+SELECT ID, 'Mikkeller', 'DK' FROM "USER" WHERE NAME = 'mikkeller' UNION ALL
+SELECT ID, 'Stone Brewing', 'US' FROM "USER" WHERE NAME = 'stone' UNION ALL
+SELECT ID, 'Sierra Nevada', 'US' FROM "USER" WHERE NAME = 'sierranevada' UNION ALL
+SELECT ID, 'Brooklyn Brewery', 'US' FROM "USER" WHERE NAME = 'brooklyn' UNION ALL
+SELECT ID, 'Lagunitas Brewing Company', 'US' FROM "USER" WHERE NAME = 'lagunitas' UNION ALL
+SELECT ID, 'Trillium Brewing Company', 'US' FROM "USER" WHERE NAME = 'trillium' UNION ALL
+SELECT ID, 'Cantillon Brewery', 'BE' FROM "USER" WHERE NAME = 'cantillon' UNION ALL
+SELECT ID, 'De Ranke Brewery', 'BE' FROM "USER" WHERE NAME = 'deranke';
 
 INSERT INTO BEER (NAME, ABV, "STYLE", DESCRIPTION, MANUFACTURER_ID)
 VALUES
     ('Apricot Dispersion', 6, 'Mixed fermentation', 'Cervesa de fermentació mixta macerada amb albercoc local.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Lo Vilot')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Lo Vilot')),
     ('Brett Saison', 5.5, 'Saison', 'A dry and fruity beer with a complex aroma of spices and citrus.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Brewdog')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Brewdog')),
     ('Citra Pale Ale', 5.2, 'Pale Ale', 'A hoppy and refreshing beer with a citrusy aroma.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Mikkeller')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Mikkeller')),
     ('Double IPA', 8, 'IPA', 'A strong and hoppy beer with a high alcohol content.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Stone Brewing')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Stone Brewing')),
     ('Elderflower Saison', 4.5, 'Saison', 'A light and floral beer with a hint of elderflower.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Sierra Nevada')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Sierra Nevada')),
     ('Flanders Red Ale', 6, 'Flanders Red Ale', 'A sour and fruity beer with a deep red color.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Brooklyn Brewery')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Brooklyn Brewery')),
     ('Gose', 4.2, 'Gose', 'A salty and sour beer with a hint of coriander.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Lagunitas Brewing Company')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Lagunitas Brewing Company')),
     ('Hazy IPA', 6.5, 'IPA', 'A hazy and juicy beer with a tropical fruit aroma.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Trillium Brewing Company')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Trillium Brewing Company')),
     ('Imperial Stout', 10, 'Stout', 'A rich and dark beer with a high alcohol content.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'Cantillon Brewery')),
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'Cantillon Brewery')),
     ('Jolly Pumpkin Oro de Calabaza', 8, 'Belgian Strong Ale', 'A complex and spicy beer with a hint of oak.',
-        (SELECT M.ID FROM "USER" U LEFT JOIN MANUFACTURER M ON M.USER_ID = U.ID WHERE U.NAME = 'De Ranke Brewery'));
+        (SELECT ID FROM MANUFACTURER WHERE NAME = 'De Ranke Brewery'));

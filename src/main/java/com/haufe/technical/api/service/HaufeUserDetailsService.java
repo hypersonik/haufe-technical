@@ -1,6 +1,7 @@
 package com.haufe.technical.api.service;
 
 import com.haufe.technical.api.auth.HaufeUserDetails;
+import com.haufe.technical.api.domain.dto.user.UserWithManufacturerDto;
 import com.haufe.technical.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -8,6 +9,8 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +27,14 @@ public class HaufeUserDetailsService implements ReactiveUserDetailsService {
                         .username(user.name())
                         .password(user.password())
                         .build()
-                        .roles(StringUtils.split(user.roles(), ','))
+                        .roles(getRoles(user))
                 );
+    }
+
+    private static String[] getRoles(UserWithManufacturerDto user) {
+        return Arrays.stream(StringUtils.split(user.roles(), ','))
+                .map(String::trim)
+                .filter(role -> !role.isEmpty())
+                .toArray(String[]::new);
     }
 }

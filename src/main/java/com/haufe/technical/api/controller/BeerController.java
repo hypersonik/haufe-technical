@@ -26,8 +26,11 @@ public class BeerController {
             {
               "page": 0,
               "size": 10,
-              "sort": "name"
+              "sort": "name,asc"
             }""";
+
+    public static final String PAGE_PARAMETERS_DESCRIPTION = """
+            Valid values for sort: "id", "name", "abv", "style", "description" with optional "asc" or "desc" suffix.""";
 
     private final BeerService beerService;
 
@@ -76,9 +79,14 @@ public class BeerController {
      */
     @GetMapping()
     public Flux<BeerListResponseDto> list(
-            @Parameter(example = PAGE_PARAMETER_EXAMPLE)
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Float minAbv,
+            @RequestParam(required = false) Float maxAbv,
+            @RequestParam(required = false) String style,
+            @RequestParam(required = false) Long manufacturerId,
+            @Parameter(example = PAGE_PARAMETER_EXAMPLE, description = PAGE_PARAMETERS_DESCRIPTION)
             @PageableDefault(sort = "name") Pageable pageable) {
-        return beerService.list(pageable);
+        return beerService.list(name, minAbv, maxAbv, style, manufacturerId, pageable);
     }
 
     @DeleteMapping("{id}")

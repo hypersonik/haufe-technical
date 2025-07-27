@@ -1,3 +1,6 @@
 package com.haufe.technical.api.domain.dto.manufacturer;
 
-public record ManufacturerUpsertDto(String name, String country, String password) {}
+import lombok.Builder;
+
+@Builder(toBuilder = true)
+public record ManufacturerUpsertDto(String userName, String password, Boolean userEnabled, String name, String country) {}

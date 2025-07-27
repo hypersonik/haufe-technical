@@ -26,7 +26,12 @@ public class WebSecurityConfig
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
         return http
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(HttpMethod.GET, "/auth/me").permitAll()
+                        .pathMatchers(HttpMethod.GET,
+                                "/auth/me",
+                                "/api/manufacturer",
+                                "/api/manufacturer/{id}",
+                                "/api/beer",
+                                "/api/beer/{id}").permitAll()
                         .pathMatchers(SWAGGER_WHITELIST).permitAll()
                         .anyExchange().authenticated()
                 )

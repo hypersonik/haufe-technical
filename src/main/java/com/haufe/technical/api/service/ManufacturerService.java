@@ -6,9 +6,9 @@ import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertDto;
 import com.haufe.technical.api.domain.dto.manufacturer.ManufacturerUpsertResponseDto;
 import com.haufe.technical.api.domain.entity.Manufacturer;
 import com.haufe.technical.api.domain.entity.User;
+import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.repository.BeerRepository;
 import com.haufe.technical.api.repository.ManufacturerRepository;
-import com.haufe.technical.api.exception.ApiException;
 import com.haufe.technical.api.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,55 +16,56 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ManufacturerService {
-    private static final List<String> ALLOWED_COLUMNS = List.of("id", "name", "country");
-
     private final ManufacturerRepository manufacturerRepository;
     private final BeerRepository beerRepository;
     private final UserRepository userRepository;
 
     private final PasswordEncoder passwordEncoder;
-    private final DatabaseClient databaseClient;
 
     @Transactional
     public Mono<ManufacturerUpsertResponseDto> create(ManufacturerUpsertDto request) {
-        return userRepository.findByName(request.name())
+        if (!checkManufacturer(request)) {
+            return Mono.error(new ApiException(HttpStatus.BAD_REQUEST, "User name and name must not be empty"));
+        }
+        return userRepository.findByName(request.userName())
                 .flatMap(existingUser ->
                         Mono.<ManufacturerUpsertResponseDto>error(
                                 new ApiException(
                                         HttpStatus.BAD_REQUEST,
-                                        "User with name " + request.name() + " already exists")))
+                                        "User with name " + request.userName() + " already exists")))
                 .switchIfEmpty(Mono.defer(() -> createUser(request)));
+    }
+
+    private static boolean checkManufacturer(ManufacturerUpsertDto request) {
+        return StringUtils.isNotBlank(request.userName()) && StringUtils.isNotBlank(request.name());
     }
 
     private Mono<ManufacturerUpsertResponseDto> createUser(ManufacturerUpsertDto request) {
         User user = User.builder()
-                .name(request.name())
+                .name(request.userName())
                 .password(passwordEncoder.encode(request.password()))
+                .enabled(request.userEnabled())
                 .roles("MANUFACTURER")
                 .build();
         return userRepository.save(user)
-                .flatMap(savedUser -> createNew(request, savedUser.getId()));
+                .flatMap(savedUser -> createManufacturer(request, savedUser.getId()));
     }
 
-    private Mono<ManufacturerUpsertResponseDto> createNew(ManufacturerUpsertDto request, Long userId) {
+    private Mono<ManufacturerUpsertResponseDto> createManufacturer(ManufacturerUpsertDto request, Long userId) {
         Manufacturer manufacturer = Manufacturer.builder()
-                .country(request.country())
                 .userId(userId)
+                .name(request.name())
+                .country(request.country())
                 .build();
 
         return manufacturerRepository.save(manufacturer)
@@ -102,16 +103,18 @@ public class ManufacturerService {
     }
 
     private Mono<ManufacturerUpsertResponseDto> validateAndUpdateUser(ManufacturerUpsertDto request, User user, Manufacturer manufacturer) {
-        return checkUserNameUniqueness(request.name(), user.getId())
+        return checkUserNameUniqueness(request.userName(), user.getId())
                 .flatMap(unused ->  updateManufacturerAndUser(request, manufacturer, user));
     }
 
     private Mono<Boolean> checkUserNameUniqueness(String name, Long userId) {
-        return userRepository.existsByNameAndIdNot(name, userId)
-                .filter(exists -> !exists)
-                .switchIfEmpty(Mono.error(new ApiException(
-                        HttpStatus.CONFLICT,
-                        "A user with name '" + name + "' already exists")));
+        return StringUtils.isBlank(name) ?
+                Mono.just(true) :
+                userRepository.existsByNameAndIdNot(name, userId)
+                        .filter(exists -> !exists)
+                        .switchIfEmpty(Mono.error(new ApiException(
+                                HttpStatus.CONFLICT,
+                                "A user with name '" + name + "' already exists")));
     }
 
     private Mono<ManufacturerUpsertResponseDto> updateManufacturerAndUser(ManufacturerUpsertDto request,
@@ -119,66 +122,40 @@ public class ManufacturerService {
                                                                           User user) {
         updateFields(request, manufacturer, user);
         return userRepository.save(user)
-                .zipWith(manufacturerRepository.save(manufacturer))
-                .map(tuple -> new ManufacturerUpsertResponseDto(
-                        tuple.getT2().getId(),
-                        tuple.getT1().getName()));
+                .flatMap(unused -> manufacturerRepository.save(manufacturer))
+                .map(updatedManufacturer -> new ManufacturerUpsertResponseDto(
+                        updatedManufacturer.getId(),
+                        updatedManufacturer.getName()));
     }
 
     // Update user details if they are provided
     private void updateFields(ManufacturerUpsertDto request, Manufacturer manufacturer, User user) {
+        if (StringUtils.isNotBlank(request.name()))     manufacturer.setName(request.name());
         if (StringUtils.isNotBlank(request.country()))  manufacturer.setCountry(request.country());
-        if (StringUtils.isNotBlank(request.name()))     user.setName(request.name());
+        if (StringUtils.isNotBlank(request.name()))     user.setName(request.userName());
         if (StringUtils.isNotBlank(request.password())) user.setPassword(passwordEncoder.encode(request.password()));
     }
 
     public Mono<ManufacturerReadResponseDto> read(Long id) {
-        return manufacturerRepository.findByIdWithName(id)
+        return manufacturerRepository.findById(id)
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND,
                         "Manufacturer with id " + id + " not found")))
-                .map(dto ->
-                        new ManufacturerReadResponseDto(dto.name(), dto.country()));
+                .map(manufacturer ->
+                        new ManufacturerReadResponseDto(manufacturer.getName(), manufacturer.getCountry()));
     }
 
     public Mono<Page<ManufacturerListResponseDto>> list(Pageable pageable) {
-        return findAllWithName(pageable.getPageSize(), pageable.getOffset(), pageable.getSort())
+        return manufacturerRepository.findAll(pageable.getSort())
+                .skip(pageable.getOffset())
+                .take(pageable.getPageSize())
+                .map(manufacturer -> new ManufacturerListResponseDto(
+                        manufacturer.getId(),
+                        manufacturer.getName(),
+                        manufacturer.getCountry()))
                 .collectList()
                 .zipWith(manufacturerRepository.count())
                 .map(tuple -> new PageImpl<>(tuple.getT1(), pageable, tuple.getT2()));
-    }
-
-    private Flux<ManufacturerListResponseDto> findAllWithName(long limit, long offset, Sort sort) {
-        // Validate sort parameters
-        Sort.Order order = sort.get().findFirst().orElse(Sort.Order.by("id"));
-        String sql = buildSql(limit, offset, order);
-        log.debug("Executing SQL: {}", sql);
-
-        return databaseClient.sql(sql)
-                .map((row, metadata) -> new ManufacturerListResponseDto(
-                        row.get("ID", Long.class),
-                        row.get("NAME", String.class),
-                        row.get("COUNTRY", String.class)
-                ))
-                .all();
-    }
-
-    private static String buildSql(long limit, long offset, Sort.Order order) {
-        String sortProperty = order.getProperty();
-        String sortDirection = order.getDirection().name();
-
-        // Allowlist of allowed columns to prevent SQL injection
-        if (!ALLOWED_COLUMNS.contains(sortProperty.toLowerCase())) {
-            sortProperty = "id"; // Safe fallback
-        }
-
-        // Dynamic SQL query construction
-        return """
-            SELECT M.ID, U.NAME, M.COUNTRY
-            FROM MANUFACTURER M LEFT JOIN "USER" U ON U.ID = M.USER_ID
-            ORDER BY %s %s
-            LIMIT %d OFFSET %d
-            """.formatted(sortProperty, sortDirection, limit, offset);
     }
 
     @Transactional

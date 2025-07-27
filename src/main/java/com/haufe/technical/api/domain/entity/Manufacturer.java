@@ -17,6 +17,7 @@ public class Manufacturer {
     @Id
     private Long id;
     private Long userId;
+    private String name;
     private String country;
 
     @EqualsAndHashCode.Exclude
