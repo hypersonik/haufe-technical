@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
@@ -40,6 +41,7 @@ public class ManufacturerController {
      * @return the {@link ManufacturerUpsertResponseDto} response containing created manufacturer details
      */
     @PostMapping()
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
     public Mono<ManufacturerUpsertResponseDto> create(@RequestBody ManufacturerUpsertDto request) {
         return manufacturerService.create(request);

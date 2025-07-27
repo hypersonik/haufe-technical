@@ -88,7 +88,7 @@ class BeerControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(beerUpsertDto)
                     .exchange()
-                    .expectStatus().isOk()
+                    .expectStatus().isCreated()
                     .expectBody(BeerUpsertResponseDto.class)
                     .isEqualTo(beerUpsertResponseDto);
         }

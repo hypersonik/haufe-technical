@@ -73,7 +73,7 @@ class ManufacturerControllerTest {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(request)
                     .exchange()
-                    .expectStatus().isOk()
+                    .expectStatus().isCreated()
                     .expectBody()
                     .jsonPath("$.id").isEqualTo(THE_ID)
                     .jsonPath("$.name").isEqualTo(THE_MANUFACTURER);

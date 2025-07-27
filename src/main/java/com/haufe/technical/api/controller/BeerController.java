@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -42,6 +43,7 @@ public class BeerController {
      * @return the {@link BeerUpsertResponseDto} response containing created beer details
      */
     @PostMapping("{manufacturerId}")
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN') or (hasRole('MANUFACTURER') and #manufacturerId == authentication.principal.manufacturerId)")
     public Mono<BeerUpsertResponseDto> create(@PathVariable Long manufacturerId,
                                               @RequestBody BeerUpsertDto request) throws ApiException {
