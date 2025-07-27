@@ -252,7 +252,7 @@ class BeerControllerTest {
             webTestClient.delete()
                     .uri("/api/beer/{id}", beerId)
                     .exchange()
-                    .expectStatus().isOk();
+                    .expectStatus().isNoContent();
         }
 
         @Test

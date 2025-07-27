@@ -92,6 +92,7 @@ public class BeerController {
     }
 
     @DeleteMapping("{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAnyRole('ADMIN', 'MANUFACTURER')")
     public Mono<Void> delete(@PathVariable Long id) {
         return beerService.delete(id);

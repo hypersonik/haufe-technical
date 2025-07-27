@@ -268,7 +268,7 @@ class ManufacturerControllerTest {
     class DeleteTests {
         private static Stream<Arguments> testDelete() {
             return Stream.of(
-                    Arguments.of("ADMIN", HttpStatus.OK, times(1)), // Admin role
+                    Arguments.of("ADMIN", HttpStatus.NO_CONTENT, times(1)), // Admin role
                     Arguments.of("MANUFACTURER", HttpStatus.FORBIDDEN, never()),           // Manufacturer role
                     Arguments.of(null, HttpStatus.UNAUTHORIZED, never())                   // Anonymous user
             );

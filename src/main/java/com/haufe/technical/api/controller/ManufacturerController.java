@@ -85,6 +85,7 @@ public class ManufacturerController {
     }
 
     @DeleteMapping("{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
     public Mono<Void> delete(@PathVariable Long id) {
         return manufacturerService.delete(id);

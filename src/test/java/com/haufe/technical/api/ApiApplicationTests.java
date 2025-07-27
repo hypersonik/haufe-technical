@@ -20,11 +20,18 @@ import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * This class contains integration tests for the API application.
+ * It uses WebTestClient to perform HTTP requests and verify responses.
+ * The tests cover various scenarios including creation, updating, reading, and listing manufacturers.
+ */
 
 @SpringBootTest
 @AutoConfigureWebTestClient
@@ -55,8 +62,8 @@ class ApiApplicationTests {
 	class ManufacturerTests {
 		@Test
 		void createManufacturer_shouldReturnUnauthorized() {
-			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
-					THE_USERNAME, THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+            ManufacturerUpsertDto request = new ManufacturerUpsertDto(
+					"cm-unauthorized", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
 
 			webTestClient
 					.post().uri("/api/manufacturer")
@@ -70,7 +77,7 @@ class ApiApplicationTests {
 		@WithMockUser(roles = "MANUFACTURER")
 		void createManufacturer_shouldReturnForbidden() {
 			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
-					THE_USERNAME, THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+					"cm-forbidden", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
 
 			webTestClient
 					.post().uri("/api/manufacturer")
@@ -98,7 +105,7 @@ class ApiApplicationTests {
 		@WithMockUser(roles = "ADMIN")
 		void createManufacturer_shouldReturnCreated() {
 			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
-					THE_USERNAME, THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+					"cm-ok", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
 
 			StepVerifier.create(webTestClient
 							.post().uri("/api/manufacturer")
@@ -121,7 +128,7 @@ class ApiApplicationTests {
 
 						User user = userRepository.findById(manufacturer.getUserId()).block();
                         Assertions.assertNotNull(user);
-                        assertThat(user.getName()).isEqualTo(THE_USERNAME);
+                        assertThat(user.getName()).isEqualTo("cm-ok");
 						assertThat(user.getPassword()).isNotEqualTo(THE_PASSWORD); // Password should be hashed
 						assertThat(user.getRoles()).isEqualTo("MANUFACTURER");
 
@@ -150,7 +157,7 @@ class ApiApplicationTests {
 		@WithMockUser(roles = "ADMIN")
 		void updateManufacturer_shouldReturnModified() {
 			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
-					THE_USERNAME, THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+					"um-modified", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
 
 			StepVerifier.create(webTestClient
 							.post().uri("/api/manufacturer")
@@ -215,7 +222,7 @@ class ApiApplicationTests {
 		@WithMockUser(roles = "ADMIN")
 		void readManufacturer_shouldReturnManufacturer() {
 			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
-					THE_USERNAME, THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+					"rm-ok", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
 			StepVerifier.create(webTestClient
 							.post().uri("/api/manufacturer")
 							.contentType(MediaType.APPLICATION_JSON)
@@ -269,5 +276,40 @@ class ApiApplicationTests {
 						});
 					});
 		}
+
+		@Test
+		@WithMockUser(roles = "ADMIN")
+		void deleteManufacturer_shouldDeleteManufacturer() {
+			ManufacturerUpsertDto request = new ManufacturerUpsertDto(
+					"dm-ok", THE_PASSWORD, true, THE_MANUFACTURER, THE_COUNTRY);
+
+			StepVerifier.create(webTestClient
+							.post().uri("/api/manufacturer")
+							.contentType(MediaType.APPLICATION_JSON)
+							.bodyValue(request)
+							.exchange()
+							.expectStatus().isCreated()
+							.returnResult(ManufacturerUpsertResponseDto.class)
+							.getResponseBody()
+							.next()
+							.flatMap(response -> {
+								Long manufacturerId = response.id();
+								return webTestClient
+										.delete().uri("/api/manufacturer/" + manufacturerId)
+										.exchange()
+										.expectStatus().isNoContent()
+										.returnResult(Void.class)
+										.getResponseBody()
+										.then(Mono.just(response));
+							})
+					)
+					.assertNext(dto ->
+							assertThat(manufacturerRepository.existsById(dto.id()).block()).isFalse())
+					.verifyComplete();
+		}
+	}
+
+	@Nested
+	class BeerTests {
 	}
 }
