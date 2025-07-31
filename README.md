@@ -1,5 +1,10 @@
 # Beer Catalogue API
 
+> **For reviewers: please, checkout "webflux" branch.**  
+> This (master) branch contains a different approach and is incomplete.
+
+---
+
 ## Overview
 This is a simple RESTful API for managing a beer catalogue. It allows users to create, read, update, and delete beer entries.
 It is built using Spring Boot + Spring Webflux and provides endpoints for beer management.
@@ -61,4 +66,3 @@ It is built using Spring Boot + Spring Webflux and provides endpoints for beer m
     # Delete a beer
     curl -X DELETE "http://localhost:8080/api/beers/{id}"
     ```
-  
